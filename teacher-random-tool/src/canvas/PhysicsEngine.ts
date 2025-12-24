@@ -340,7 +340,7 @@ export class PhysicsEngine {
         this.obstacles.push({ type: 'rotator', x: W * 0.5, y: cy + 150, length: W * 0.25, angle: 0, speed: 0.05 });
 
         // 바람 영역 (깔때기에서 속도 저하)
-        this.obstacles.push({ type: 'wind', x: W * 0.2, y: cy, width: W * 0.6, height: 350, forceX: 0, forceY: -0.5 });
+        this.obstacles.push({ type: 'wind', x: W * 0.2, y: cy, width: W * 0.6, height: 350, forceX: 0, forceY: -0.25 });
         cy += 350;
 
         // 파이프
@@ -350,8 +350,8 @@ export class PhysicsEngine {
         this.addStaticLine(pipeX - gap, cy, pipeX - gap, cy + pipeLen);
         this.addStaticLine(pipeX + gap, cy, pipeX + gap, cy + pipeLen);
 
-        // 파이프 바람 (더 강한 저항)
-        this.obstacles.push({ type: 'wind', x: pipeX - gap, y: cy, width: gap * 2, height: pipeLen, forceX: 0, forceY: -0.6 });
+        // 파이프 바람 (약한 저항)
+        this.obstacles.push({ type: 'wind', x: pipeX - gap, y: cy, width: gap * 2, height: pipeLen, forceX: 0, forceY: -0.3 });
 
         // World Walls
         this.addStaticLine(0, 0, 0, this.worldHeight);
@@ -746,7 +746,9 @@ export class PhysicsEngine {
         if (ball.x > wind.x && ball.x < wind.x + wind.width &&
             ball.y > wind.y && ball.y < wind.y + wind.height) {
             ball.vx += wind.forceX;
+            // 바람 효과 적용하되, 최소 하강 속도 보장
             ball.vy += wind.forceY;
+            if (ball.vy < 0.5) ball.vy = 0.5; // 최소 속도 보장
         }
     }
 

@@ -191,7 +191,7 @@ const BallPicker: React.FC = () => {
                                 outline: 'none'
                             }}
                             min="1"
-                            max="30"
+                            max="50"
                             disabled={isPlaying}
                         />
                     </div>
