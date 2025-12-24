@@ -1,74 +1,144 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 
-const STORAGE_KEY_ROWS = 'TRT_SEAT_ROWS';
-const STORAGE_KEY_COLS = 'TRT_SEAT_COLS';
+type SeatMode = 'number' | 'name';
+
+const STORAGE_KEY_PAIRS = 'TRT_SEAT_PAIRS';
 const STORAGE_KEY_TOTAL = 'TRT_SEAT_TOTAL';
-const SESSION_KEY_FIXED = 'TRT_SEAT_FIXED_SESSION'; // sessionStorage
+const STORAGE_KEY_MODE = 'TRT_SEAT_MODE';
+const STORAGE_KEY_NAMES = 'TRT_SEAT_NAMES';
+const SESSION_KEY_FIXED = 'TRT_SEAT_FIXED_SESSION';
 
 const SeatSettings: React.FC = () => {
-    const [rows, setRows] = useState<number>(5);
-    const [cols, setCols] = useState<number>(6);
+    const [pairRows, setPairRows] = useState<number>(5);
     const [totalStudents, setTotalStudents] = useState<number>(30);
+    const [mode, setMode] = useState<SeatMode>('number');
+    const [names, setNames] = useState<string[]>([]);
+    const [nameInput, setNameInput] = useState<string>('');
+    const [showNameInput, setShowNameInput] = useState<boolean>(false);
     const [fixedSeats, setFixedSeats] = useState<Map<string, number>>(new Map());
-    const [selectedSeat, setSelectedSeat] = useState<{ row: number, col: number } | null>(null);
+    const [selectedSeat, setSelectedSeat] = useState<{ row: number, pair: number, seat: number } | null>(null);
+
+    // 계산된 값
+    const studentCount = mode === 'name' ? names.length : totalStudents;
+    const totalPairs = Math.ceil(studentCount / 2) || 1;
+    const pairsPerRow = Math.max(1, Math.ceil(totalPairs / pairRows));
+
+    // 이름 파싱
+    const parseNames = (input: string): string[] => {
+        return input
+            .split(/[\n,，\t\s]+/)
+            .map(s => s.trim())
+            .filter(s => s.length > 0);
+    };
 
     // Load settings
     useEffect(() => {
-        const savedRows = localStorage.getItem(STORAGE_KEY_ROWS);
-        const savedCols = localStorage.getItem(STORAGE_KEY_COLS);
+        const savedPairs = localStorage.getItem(STORAGE_KEY_PAIRS);
         const savedTotal = localStorage.getItem(STORAGE_KEY_TOTAL);
+        const savedMode = localStorage.getItem(STORAGE_KEY_MODE);
+        const savedNames = localStorage.getItem(STORAGE_KEY_NAMES);
         const savedFixed = sessionStorage.getItem(SESSION_KEY_FIXED);
 
-        if (savedRows) setRows(parseInt(savedRows));
-        if (savedCols) setCols(parseInt(savedCols));
+        if (savedPairs) setPairRows(parseInt(savedPairs));
         if (savedTotal) setTotalStudents(parseInt(savedTotal));
+        if (savedMode) setMode(savedMode as SeatMode);
+        if (savedNames) {
+            const parsed = JSON.parse(savedNames);
+            setNames(parsed);
+            setNameInput(parsed.join('\n'));
+        }
         if (savedFixed) {
             const parsed = JSON.parse(savedFixed);
             setFixedSeats(new Map(Object.entries(parsed).map(([k, v]) => [k, v as number])));
         }
     }, []);
 
-    // Save settings
-    useEffect(() => {
-        localStorage.setItem(STORAGE_KEY_ROWS, rows.toString());
-        localStorage.setItem(STORAGE_KEY_COLS, cols.toString());
-        localStorage.setItem(STORAGE_KEY_TOTAL, totalStudents.toString());
-        const fixedObj = Object.fromEntries(fixedSeats);
-        sessionStorage.setItem(SESSION_KEY_FIXED, JSON.stringify(fixedObj));
-    }, [rows, cols, totalStudents, fixedSeats]);
-
-    const handleSeatClick = (row: number, col: number) => {
-        setSelectedSeat({ row, col });
+    // 저장 함수
+    const saveToStorage = (data: {
+        pairRows?: number;
+        totalStudents?: number;
+        mode?: SeatMode;
+        names?: string[];
+        fixedSeats?: Map<string, number>;
+    }) => {
+        if (data.pairRows !== undefined) localStorage.setItem(STORAGE_KEY_PAIRS, data.pairRows.toString());
+        if (data.totalStudents !== undefined) localStorage.setItem(STORAGE_KEY_TOTAL, data.totalStudents.toString());
+        if (data.mode !== undefined) localStorage.setItem(STORAGE_KEY_MODE, data.mode);
+        if (data.names !== undefined) localStorage.setItem(STORAGE_KEY_NAMES, JSON.stringify(data.names));
+        if (data.fixedSeats !== undefined) {
+            const fixedObj = Object.fromEntries(data.fixedSeats);
+            sessionStorage.setItem(SESSION_KEY_FIXED, JSON.stringify(fixedObj));
+        }
     };
 
-    const setFixedSeat = (studentNumber: number) => {
+    const handlePairRowsChange = (val: number) => {
+        const newVal = Math.max(1, Math.min(10, val));
+        setPairRows(newVal);
+        saveToStorage({ pairRows: newVal });
+    };
+
+    const handleTotalStudentsChange = (val: number) => {
+        const newVal = Math.max(1, val);
+        setTotalStudents(newVal);
+        saveToStorage({ totalStudents: newVal });
+    };
+
+    const handleModeChange = (newMode: SeatMode) => {
+        setMode(newMode);
+        saveToStorage({ mode: newMode });
+    };
+
+    const handleNameInputSave = () => {
+        const parsed = parseNames(nameInput);
+        setNames(parsed);
+        setTotalStudents(parsed.length);
+        setShowNameInput(false);
+        saveToStorage({ names: parsed, totalStudents: parsed.length });
+    };
+
+    const handleSeatClick = (row: number, pair: number, seat: number) => {
+        setSelectedSeat({ row, pair, seat });
+    };
+
+    const setFixedSeat = (studentIdx: number) => {
         if (!selectedSeat) return;
 
-        const posKey = `${selectedSeat.row}-${selectedSeat.col}`;
+        const posKey = `${selectedSeat.row}-${selectedSeat.pair}-${selectedSeat.seat}`;
         const newFixed = new Map(fixedSeats);
 
-        // 같은 학생이 다른 곳에 고정되어 있으면 제거
-        newFixed.forEach((num, pos) => {
-            if (num === studentNumber) {
-                newFixed.delete(pos);
-            }
-        });
-
-        if (studentNumber > 0 && studentNumber <= totalStudents) {
-            newFixed.set(posKey, studentNumber);
-        } else {
+        // 해제 (studentIdx가 0이거나 유효하지 않으면)
+        if (studentIdx <= 0 || studentIdx > studentCount) {
             newFixed.delete(posKey);
+        } else {
+            // 같은 학생이 다른 곳에 고정되어 있으면 제거
+            for (const [pos, num] of newFixed) {
+                if (num === studentIdx && pos !== posKey) {
+                    newFixed.delete(pos);
+                }
+            }
+            newFixed.set(posKey, studentIdx);
         }
 
         setFixedSeats(newFixed);
         setSelectedSeat(null);
+        saveToStorage({ fixedSeats: newFixed });
     };
 
     const clearAllFixed = () => {
         if (confirm('모든 고정석을 해제하시겠습니까?')) {
-            setFixedSeats(new Map());
+            const emptyMap = new Map<string, number>();
+            setFixedSeats(emptyMap);
+            saveToStorage({ fixedSeats: emptyMap });
         }
+    };
+
+    // 표시 텍스트
+    const getDisplayText = (idx: number): string => {
+        if (mode === 'name' && names[idx - 1]) {
+            return names[idx - 1];
+        }
+        return String(idx);
     };
 
     return (
@@ -78,10 +148,13 @@ const SeatSettings: React.FC = () => {
                 {/* 타이틀 */}
                 <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
                     <h1 style={{ fontSize: '2rem', color: '#333', margin: 0, fontWeight: '600' }}>
-                        ⚙️ 자리 배치 설정
+                        ⚙️ 짝꿍 배치 설정
                     </h1>
                     <p style={{ color: '#888', marginTop: '0.3rem', fontSize: '0.9rem' }}>
-                        고정석을 설정하세요 (브라우저 탭을 닫으면 초기화됩니다)
+                        고정석을 설정하세요 (탭을 닫으면 초기화)
+                    </p>
+                    <p style={{ color: '#e74c3c', marginTop: '0.3rem', fontSize: '0.8rem' }}>
+                        ⚠️ 줄 수 변경 시 고정석 위치가 달라질 수 있습니다
                     </p>
                 </div>
 
@@ -97,39 +170,141 @@ const SeatSettings: React.FC = () => {
                     borderRadius: '12px',
                     border: '1px solid rgba(0,0,0,0.06)'
                 }}>
+                    {/* 모드 토글 */}
+                    <div style={{ display: 'flex', gap: '0.3rem' }}>
+                        <button
+                            onClick={() => handleModeChange('number')}
+                            style={{
+                                padding: '0.5rem 1rem',
+                                fontSize: '0.9rem',
+                                fontWeight: '600',
+                                background: mode === 'number' ? '#4A90E2' : '#f0f0f0',
+                                color: mode === 'number' ? '#fff' : '#666',
+                                border: mode === 'number' ? 'none' : '1px solid #ddd',
+                                borderRadius: '8px 0 0 8px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            번호
+                        </button>
+                        <button
+                            onClick={() => handleModeChange('name')}
+                            style={{
+                                padding: '0.5rem 1rem',
+                                fontSize: '0.9rem',
+                                fontWeight: '600',
+                                background: mode === 'name' ? '#E24A90' : '#f0f0f0',
+                                color: mode === 'name' ? '#fff' : '#666',
+                                border: mode === 'name' ? 'none' : '1px solid #ddd',
+                                borderRadius: '0 8px 8px 0',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            이름
+                        </button>
+                    </div>
+
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #eee' }}>
-                        <label style={{ color: '#555', fontWeight: '500', fontSize: '0.9rem' }}>행</label>
+                        <label style={{ color: '#555', fontWeight: '500', fontSize: '0.9rem' }}>줄 수</label>
                         <input
                             type="number"
-                            value={rows}
-                            onChange={(e) => setRows(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
+                            value={pairRows}
+                            onChange={(e) => handlePairRowsChange(parseInt(e.target.value) || 1)}
                             style={{ padding: '0.4rem', fontSize: '1rem', width: '50px', textAlign: 'center', border: '1px solid #ddd', borderRadius: '6px' }}
                             min="1"
                             max="10"
                         />
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #eee' }}>
-                        <label style={{ color: '#555', fontWeight: '500', fontSize: '0.9rem' }}>열</label>
-                        <input
-                            type="number"
-                            value={cols}
-                            onChange={(e) => setCols(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
-                            style={{ padding: '0.4rem', fontSize: '1rem', width: '50px', textAlign: 'center', border: '1px solid #ddd', borderRadius: '6px' }}
-                            min="1"
-                            max="10"
-                        />
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #eee' }}>
-                        <label style={{ color: '#555', fontWeight: '500', fontSize: '0.9rem' }}>학생 수</label>
-                        <input
-                            type="number"
-                            value={totalStudents}
-                            onChange={(e) => setTotalStudents(Math.max(1, parseInt(e.target.value) || 1))}
-                            style={{ padding: '0.4rem', fontSize: '1rem', width: '60px', textAlign: 'center', border: '1px solid #ddd', borderRadius: '6px' }}
-                            min="1"
-                        />
-                    </div>
+
+                    {mode === 'number' && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #eee' }}>
+                            <label style={{ color: '#555', fontWeight: '500', fontSize: '0.9rem' }}>학생 수</label>
+                            <input
+                                type="number"
+                                value={totalStudents}
+                                onChange={(e) => handleTotalStudentsChange(parseInt(e.target.value) || 1)}
+                                style={{ padding: '0.4rem', fontSize: '1rem', width: '60px', textAlign: 'center', border: '1px solid #ddd', borderRadius: '6px' }}
+                                min="1"
+                            />
+                        </div>
+                    )}
+
+                    {mode === 'name' && (
+                        <button
+                            onClick={() => setShowNameInput(true)}
+                            style={{
+                                padding: '0.5rem 1rem',
+                                fontSize: '0.9rem',
+                                fontWeight: '500',
+                                background: '#fff',
+                                color: '#E24A90',
+                                border: '1px solid #E24A90',
+                                borderRadius: '8px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            📝 이름 ({names.length}명)
+                        </button>
+                    )}
                 </div>
+
+                {/* 이름 입력 모달 */}
+                {showNameInput && (
+                    <div style={{
+                        position: 'fixed',
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        background: 'rgba(0,0,0,0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 1000
+                    }}>
+                        <div style={{
+                            background: '#fff',
+                            padding: '1.5rem',
+                            borderRadius: '16px',
+                            width: '90%',
+                            maxWidth: '400px'
+                        }}>
+                            <h3 style={{ margin: '0 0 0.5rem 0' }}>📝 학생 이름 입력</h3>
+                            <p style={{ color: '#666', fontSize: '0.85rem', margin: '0 0 1rem 0' }}>
+                                줄바꿈, 쉼표, 띄어쓰기로 구분
+                            </p>
+                            <textarea
+                                value={nameInput}
+                                onChange={(e) => setNameInput(e.target.value)}
+                                placeholder="예시:&#10;김철수&#10;이영희&#10;박민수"
+                                style={{
+                                    width: '100%',
+                                    height: '200px',
+                                    padding: '0.8rem',
+                                    fontSize: '1rem',
+                                    border: '1px solid #ddd',
+                                    borderRadius: '8px',
+                                    resize: 'vertical',
+                                    fontFamily: 'inherit'
+                                }}
+                            />
+                            <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#888' }}>
+                                인식된 이름: {parseNames(nameInput).length}명
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                                <button
+                                    onClick={() => setShowNameInput(false)}
+                                    style={{ padding: '0.5rem 1rem', background: '#f0f0f0', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer' }}
+                                >
+                                    취소
+                                </button>
+                                <button
+                                    onClick={handleNameInputSave}
+                                    style={{ padding: '0.5rem 1.5rem', background: '#4A90E2', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+                                >
+                                    저장
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* 고정석 현황 */}
                 <div style={{
@@ -141,7 +316,7 @@ const SeatSettings: React.FC = () => {
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontWeight: '600', color: '#0066cc' }}>
-                            📌 고정석: {fixedSeats.size}개 설정됨
+                            📌 고정석: {fixedSeats.size}개
                         </span>
                         {fixedSeats.size > 0 && (
                             <button
@@ -160,19 +335,11 @@ const SeatSettings: React.FC = () => {
                             </button>
                         )}
                     </div>
-                    {fixedSeats.size > 0 && (
-                        <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#666' }}>
-                            {Array.from(fixedSeats.entries()).map(([pos, num]) => {
-                                const [r, c] = pos.split('-').map(Number);
-                                return `${r + 1}행${c + 1}열→${num}번`;
-                            }).join(', ')}
-                        </div>
-                    )}
                 </div>
 
                 {/* 안내 */}
                 <div style={{ textAlign: 'center', marginBottom: '1rem', color: '#666', fontSize: '0.9rem' }}>
-                    👆 좌석을 클릭하여 고정할 학생 번호를 입력하세요
+                    👆 좌석 클릭 → 학생 {mode === 'name' ? '이름' : '번호'} 입력 → 그 자리에 고정
                 </div>
 
                 {/* 고정석 입력 모달 */}
@@ -191,56 +358,90 @@ const SeatSettings: React.FC = () => {
                             padding: '2rem',
                             borderRadius: '16px',
                             textAlign: 'center',
-                            minWidth: '280px'
+                            minWidth: '320px'
                         }}>
                             <h3 style={{ margin: '0 0 1rem 0' }}>
-                                📌 {selectedSeat.row + 1}행 {selectedSeat.col + 1}열
+                                📌 {selectedSeat.row + 1}줄 {selectedSeat.pair + 1}번째 {selectedSeat.seat === 0 ? '왼쪽' : '오른쪽'}
                             </h3>
                             <p style={{ color: '#666', fontSize: '0.9rem', margin: '0 0 1rem 0' }}>
-                                고정할 학생 번호를 입력하세요
+                                이 자리에 앉힐 학생 선택
                             </p>
-                            <input
-                                type="number"
-                                placeholder="번호"
-                                defaultValue={fixedSeats.get(`${selectedSeat.row}-${selectedSeat.col}`) || ''}
-                                autoFocus
-                                style={{
-                                    padding: '0.8rem',
-                                    fontSize: '1.5rem',
-                                    width: '100px',
-                                    textAlign: 'center',
-                                    border: '2px solid #4A90E2',
-                                    borderRadius: '8px',
-                                    marginBottom: '1rem'
-                                }}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        setFixedSeat(parseInt((e.target as HTMLInputElement).value) || 0);
-                                    }
-                                    if (e.key === 'Escape') {
-                                        setSelectedSeat(null);
-                                    }
-                                }}
-                            />
+                            {mode === 'name' ? (
+                                <select
+                                    id="fixedSeatInput"
+                                    defaultValue={fixedSeats.get(`${selectedSeat.row}-${selectedSeat.pair}-${selectedSeat.seat}`) || ''}
+                                    autoFocus
+                                    style={{
+                                        padding: '1rem',
+                                        fontSize: '1.1rem',
+                                        width: '220px',
+                                        textAlign: 'center',
+                                        border: '2px solid #E24A90',
+                                        borderRadius: '8px',
+                                        marginBottom: '1rem',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    <option value="">-- 선택 --</option>
+                                    {names.map((name, idx) => (
+                                        <option key={idx} value={idx + 1}>{name}</option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <input
+                                    type="number"
+                                    id="fixedSeatInput"
+                                    placeholder="번호"
+                                    defaultValue={fixedSeats.get(`${selectedSeat.row}-${selectedSeat.pair}-${selectedSeat.seat}`) || ''}
+                                    autoFocus
+                                    style={{
+                                        padding: '1rem',
+                                        fontSize: '1.5rem',
+                                        width: '120px',
+                                        textAlign: 'center',
+                                        border: '2px solid #4A90E2',
+                                        borderRadius: '8px',
+                                        marginBottom: '1rem'
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            setFixedSeat(parseInt((e.target as HTMLInputElement).value) || 0);
+                                        }
+                                        if (e.key === 'Escape') {
+                                            setSelectedSeat(null);
+                                        }
+                                    }}
+                                />
+                            )}
                             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                                 <button
                                     onClick={() => setFixedSeat(0)}
-                                    style={{ padding: '0.5rem 1rem', background: '#fee', color: '#c00', border: '1px solid #fcc', borderRadius: '6px', cursor: 'pointer' }}
+                                    style={{ padding: '0.6rem 1rem', background: '#fee', color: '#c00', border: '1px solid #fcc', borderRadius: '6px', cursor: 'pointer' }}
                                 >
                                     해제
                                 </button>
                                 <button
                                     onClick={() => setSelectedSeat(null)}
-                                    style={{ padding: '0.5rem 1rem', background: '#f0f0f0', color: '#555', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer' }}
+                                    style={{ padding: '0.6rem 1rem', background: '#f0f0f0', color: '#555', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer' }}
                                 >
                                     취소
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const input = document.getElementById('fixedSeatInput') as HTMLInputElement | HTMLSelectElement;
+                                        const val = parseInt(input.value) || 0;
+                                        setFixedSeat(val);
+                                    }}
+                                    style={{ padding: '0.6rem 1.2rem', background: '#4A90E2', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+                                >
+                                    저장
                                 </button>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* 좌석 그리드 */}
+                {/* 짝꿍 좌석 그리드 */}
                 <div style={{ display: 'flex', justifyContent: 'center' }}>
                     <div style={{
                         display: 'inline-block',
@@ -262,47 +463,88 @@ const SeatSettings: React.FC = () => {
                             📖 칠판
                         </div>
 
-                        {/* 좌석 */}
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: `repeat(${cols}, 1fr)`,
-                            gap: '0.4rem'
-                        }}>
-                            {Array.from({ length: rows * cols }).map((_, idx) => {
-                                const row = Math.floor(idx / cols);
-                                const col = idx % cols;
-                                const posKey = `${row}-${col}`;
-                                const fixedNum = fixedSeats.get(posKey);
+                        {/* 짝꿍 좌석 */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                            {Array.from({ length: pairRows }).map((_, rowIdx) => (
+                                <div key={rowIdx} style={{ display: 'flex', justifyContent: 'center', gap: '1.2rem' }}>
+                                    {Array.from({ length: pairsPerRow }).map((_, pairIdx) => {
+                                        const leftSeatNum = rowIdx * pairsPerRow * 2 + pairIdx * 2 + 1;
+                                        const rightSeatNum = leftSeatNum + 1;
+                                        const leftKey = `${rowIdx}-${pairIdx}-0`;
+                                        const rightKey = `${rowIdx}-${pairIdx}-1`;
+                                        const leftFixed = fixedSeats.get(leftKey);
+                                        const rightFixed = fixedSeats.get(rightKey);
+                                        const leftValid = leftSeatNum <= studentCount;
+                                        const rightValid = rightSeatNum <= studentCount;
 
-                                return (
-                                    <div
-                                        key={idx}
-                                        onClick={() => handleSeatClick(row, col)}
-                                        style={{
-                                            width: '50px',
-                                            height: '50px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            background: fixedNum ? '#e8f4ff' : '#fff',
-                                            border: fixedNum ? '2px solid #4A90E2' : '1px solid #ddd',
-                                            borderRadius: '8px',
-                                            fontSize: fixedNum ? '1.1rem' : '0.75rem',
-                                            fontWeight: fixedNum ? '600' : '400',
-                                            color: fixedNum ? '#0066cc' : '#bbb',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s'
-                                        }}
-                                    >
-                                        {fixedNum ? fixedNum : `${row + 1}-${col + 1}`}
-                                    </div>
-                                );
-                            })}
+                                        return (
+                                            <div key={pairIdx} style={{
+                                                display: 'flex',
+                                                gap: '2px',
+                                                background: '#e0e0e0',
+                                                padding: '3px',
+                                                borderRadius: '10px'
+                                            }}>
+                                                {/* 왼쪽 좌석 */}
+                                                <div
+                                                    onClick={() => leftValid && handleSeatClick(rowIdx, pairIdx, 0)}
+                                                    style={{
+                                                        minWidth: mode === 'name' ? '60px' : '48px',
+                                                        height: '48px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        background: leftFixed ? '#e8f4ff' : (leftValid ? '#fff' : '#f5f5f5'),
+                                                        border: leftFixed ? '2px solid #4A90E2' : '1px solid #ddd',
+                                                        borderRadius: '8px 2px 2px 8px',
+                                                        fontSize: mode === 'name' ? '0.75rem' : (leftFixed ? '1rem' : '0.75rem'),
+                                                        fontWeight: leftFixed ? '600' : '400',
+                                                        color: leftFixed ? '#0066cc' : (leftValid ? '#999' : '#ccc'),
+                                                        cursor: leftValid ? 'pointer' : 'default',
+                                                        transition: 'all 0.2s',
+                                                        padding: '0 0.2rem',
+                                                        whiteSpace: 'nowrap',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis'
+                                                    }}
+                                                >
+                                                    {leftFixed ? getDisplayText(leftFixed) : (leftValid ? getDisplayText(leftSeatNum) : '')}
+                                                </div>
+                                                {/* 오른쪽 좌석 */}
+                                                <div
+                                                    onClick={() => rightValid && handleSeatClick(rowIdx, pairIdx, 1)}
+                                                    style={{
+                                                        minWidth: mode === 'name' ? '60px' : '48px',
+                                                        height: '48px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        background: rightFixed ? '#e8f4ff' : (rightValid ? '#fff' : '#f5f5f5'),
+                                                        border: rightFixed ? '2px solid #4A90E2' : '1px solid #ddd',
+                                                        borderRadius: '2px 8px 8px 2px',
+                                                        fontSize: mode === 'name' ? '0.75rem' : (rightFixed ? '1rem' : '0.75rem'),
+                                                        fontWeight: rightFixed ? '600' : '400',
+                                                        color: rightFixed ? '#0066cc' : (rightValid ? '#999' : '#ccc'),
+                                                        cursor: rightValid ? 'pointer' : 'default',
+                                                        transition: 'all 0.2s',
+                                                        padding: '0 0.2rem',
+                                                        whiteSpace: 'nowrap',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis'
+                                                    }}
+                                                >
+                                                    {rightFixed ? getDisplayText(rightFixed) : (rightValid ? getDisplayText(rightSeatNum) : '')}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
 
-                {/* 하단 안내 */}
+                {/* 하단 */}
                 <div style={{ marginTop: '2rem', textAlign: 'center' }}>
                     <a
                         href="/seat"
@@ -317,12 +559,12 @@ const SeatSettings: React.FC = () => {
                             fontSize: '1.1rem'
                         }}
                     >
-                        🪑 자리 배치 페이지로 이동
+                        🪑 짝꿍 배치로 이동
                     </a>
                 </div>
 
                 <div style={{ marginTop: '1.5rem', textAlign: 'center', color: '#999', fontSize: '0.85rem' }}>
-                    ⚠️ 고정석 설정은 브라우저 탭을 닫으면 초기화됩니다
+                    ⚠️ 고정석은 탭을 닫으면 초기화됩니다
                 </div>
             </div>
         </div>

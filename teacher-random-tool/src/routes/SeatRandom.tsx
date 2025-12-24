@@ -1,25 +1,23 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Header from '../components/Header';
 import { toPng } from 'html-to-image';
 
 interface SeatData {
-    display: string; // 번호 또는 이름
+    display: string;
 }
 
 type SeatMode = 'number' | 'name';
 
-const STORAGE_KEY_ROWS = 'TRT_SEAT_ROWS';
-const STORAGE_KEY_COLS = 'TRT_SEAT_COLS';
-const STORAGE_KEY_TOTAL = 'TRT_SEAT_TOTAL';
+const STORAGE_KEY_PAIRS = 'TRT_SEAT_PAIRS';
 const STORAGE_KEY_MODE = 'TRT_SEAT_MODE';
 const STORAGE_KEY_NAMES = 'TRT_SEAT_NAMES';
+const STORAGE_KEY_TOTAL = 'TRT_SEAT_TOTAL';
 const SESSION_KEY_FIXED = 'TRT_SEAT_FIXED_SESSION';
 
 const SeatRandom: React.FC = () => {
-    const [rows, setRows] = useState<number>(5);
-    const [cols, setCols] = useState<number>(6);
-    const [totalStudents, setTotalStudents] = useState<number>(30);
+    const [pairRows, setPairRows] = useState<number>(5);
     const [mode, setMode] = useState<SeatMode>('number');
+    const [totalStudents, setTotalStudents] = useState<number>(30);
     const [names, setNames] = useState<string[]>([]);
     const [nameInput, setNameInput] = useState<string>('');
     const [showNameInput, setShowNameInput] = useState<boolean>(false);
@@ -29,17 +27,15 @@ const SeatRandom: React.FC = () => {
 
     // Load settings
     useEffect(() => {
-        const savedRows = localStorage.getItem(STORAGE_KEY_ROWS);
-        const savedCols = localStorage.getItem(STORAGE_KEY_COLS);
-        const savedTotal = localStorage.getItem(STORAGE_KEY_TOTAL);
+        const savedPairs = localStorage.getItem(STORAGE_KEY_PAIRS);
         const savedMode = localStorage.getItem(STORAGE_KEY_MODE);
+        const savedTotal = localStorage.getItem(STORAGE_KEY_TOTAL);
         const savedNames = localStorage.getItem(STORAGE_KEY_NAMES);
         const savedFixed = sessionStorage.getItem(SESSION_KEY_FIXED);
 
-        if (savedRows) setRows(parseInt(savedRows));
-        if (savedCols) setCols(parseInt(savedCols));
-        if (savedTotal) setTotalStudents(parseInt(savedTotal));
+        if (savedPairs) setPairRows(parseInt(savedPairs));
         if (savedMode) setMode(savedMode as SeatMode);
+        if (savedTotal) setTotalStudents(parseInt(savedTotal));
         if (savedNames) {
             const parsed = JSON.parse(savedNames);
             setNames(parsed);
@@ -51,21 +47,42 @@ const SeatRandom: React.FC = () => {
         }
     }, []);
 
-    // Save settings
-    useEffect(() => {
-        localStorage.setItem(STORAGE_KEY_ROWS, rows.toString());
-        localStorage.setItem(STORAGE_KEY_COLS, cols.toString());
-        localStorage.setItem(STORAGE_KEY_TOTAL, totalStudents.toString());
-        localStorage.setItem(STORAGE_KEY_MODE, mode);
-        localStorage.setItem(STORAGE_KEY_NAMES, JSON.stringify(names));
-    }, [rows, cols, totalStudents, mode, names]);
+    // 저장 함수
+    const saveToStorage = (data: {
+        pairRows?: number;
+        totalStudents?: number;
+        mode?: SeatMode;
+        names?: string[];
+    }) => {
+        if (data.pairRows !== undefined) localStorage.setItem(STORAGE_KEY_PAIRS, data.pairRows.toString());
+        if (data.totalStudents !== undefined) localStorage.setItem(STORAGE_KEY_TOTAL, data.totalStudents.toString());
+        if (data.mode !== undefined) localStorage.setItem(STORAGE_KEY_MODE, data.mode);
+        if (data.names !== undefined) localStorage.setItem(STORAGE_KEY_NAMES, JSON.stringify(data.names));
+    };
 
     // 이름 파싱
     const parseNames = (input: string): string[] => {
         return input
-            .split(/[\n,，\t]/)
+            .split(/[\n,，\t\s]+/)
             .map(s => s.trim())
             .filter(s => s.length > 0);
+    };
+
+    const handlePairRowsChange = (val: number) => {
+        const newVal = Math.max(1, val);
+        setPairRows(newVal);
+        saveToStorage({ pairRows: newVal });
+    };
+
+    const handleTotalStudentsChange = (val: number) => {
+        const newVal = Math.max(1, val);
+        setTotalStudents(newVal);
+        saveToStorage({ totalStudents: newVal });
+    };
+
+    const handleModeChange = (newMode: SeatMode) => {
+        setMode(newMode);
+        saveToStorage({ mode: newMode });
     };
 
     const handleNameInputSave = () => {
@@ -73,62 +90,86 @@ const SeatRandom: React.FC = () => {
         setNames(parsed);
         setTotalStudents(parsed.length);
         setShowNameInput(false);
+        saveToStorage({ names: parsed, totalStudents: parsed.length });
     };
 
-    // 셔플 함수
-    const shuffleSeats = () => {
-        const totalSeats = rows * cols;
-        const studentList = mode === 'name' ? names : Array.from({ length: totalStudents }, (_, i) => String(i + 1));
-        const studentCount = Math.min(studentList.length, totalSeats);
+    const studentCount = mode === 'name' ? names.length : totalStudents;
+    const totalPairs = Math.ceil(studentCount / 2);
+    const pairsPerRow = Math.max(1, Math.ceil(totalPairs / pairRows));
 
-        // 고정석 위치와 인덱스
-        const fixedPositions = new Set<string>();
-        const fixedIndices = new Set<number>();
-        fixedSeats.forEach((idx, pos) => {
-            if (idx <= studentCount && idx > 0) {
-                fixedPositions.add(pos);
-                fixedIndices.add(idx - 1); // 0-indexed
+    // 학생 표시 텍스트 가져오기
+    const getStudentDisplay = useCallback((index: number): string => {
+        if (mode === 'name' && names[index]) {
+            return names[index];
+        }
+        return String(index + 1);
+    }, [mode, names]);
+
+    // 셔플 함수 (고정석 반영)
+    const shuffleSeats = () => {
+        const studentList = mode === 'name' ? [...names] : Array.from({ length: totalStudents }, (_, i) => String(i + 1));
+        const count = studentList.length;
+
+        if (count === 0) return;
+
+        // 고정석에 배치된 학생 인덱스들 (0-based)
+        const fixedStudentIndices = new Set<number>();
+        fixedSeats.forEach((studentIdx) => {
+            if (studentIdx > 0 && studentIdx <= count) {
+                fixedStudentIndices.add(studentIdx - 1);
             }
         });
 
-        // 고정되지 않은 학생들
-        const availableStudents: string[] = [];
-        for (let i = 0; i < studentCount; i++) {
-            if (!fixedIndices.has(i)) {
-                availableStudents.push(studentList[i]);
+        // 고정되지 않은 학생들 셔플
+        const shuffledStudents: string[] = [];
+        for (let i = 0; i < count; i++) {
+            if (!fixedStudentIndices.has(i)) {
+                shuffledStudents.push(studentList[i]);
             }
         }
 
         // Fisher-Yates 셔플
-        for (let i = availableStudents.length - 1; i > 0; i--) {
+        for (let i = shuffledStudents.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [availableStudents[i], availableStudents[j]] = [availableStudents[j], availableStudents[i]];
+            [shuffledStudents[i], shuffledStudents[j]] = [shuffledStudents[j], shuffledStudents[i]];
         }
 
-        // 좌석 배치
-        const newSeats: (SeatData | null)[][] = [];
-        let studentIndex = 0;
+        // 좌석 배치 (고정석 위치에는 해당 학생, 나머지는 셔플된 학생)
+        const pairs: (SeatData | null)[][] = [];
+        let shuffleIndex = 0;
 
-        for (let r = 0; r < rows; r++) {
-            const row: (SeatData | null)[] = [];
-            for (let c = 0; c < cols; c++) {
-                const posKey = `${r}-${c}`;
+        for (let row = 0; row < pairRows; row++) {
+            const rowPairs: (SeatData | null)[] = [];
+            for (let p = 0; p < pairsPerRow; p++) {
+                for (let seat = 0; seat < 2; seat++) {
+                    const posKey = `${row}-${p}-${seat}`;
+                    const fixedStudentIdx = fixedSeats.get(posKey);
 
-                if (fixedSeats.has(posKey) && fixedSeats.get(posKey)! <= studentCount) {
-                    const fixedIdx = fixedSeats.get(posKey)! - 1;
-                    row.push({ display: studentList[fixedIdx] });
-                } else if (studentIndex < availableStudents.length) {
-                    row.push({ display: availableStudents[studentIndex] });
-                    studentIndex++;
-                } else {
-                    row.push(null);
+                    if (fixedStudentIdx && fixedStudentIdx > 0 && fixedStudentIdx <= count) {
+                        // 고정석: 해당 학생 배치
+                        rowPairs.push({ display: getStudentDisplay(fixedStudentIdx - 1) });
+                    } else if (shuffleIndex < shuffledStudents.length) {
+                        // 비고정석: 셔플된 학생 배치
+                        rowPairs.push({ display: shuffledStudents[shuffleIndex] });
+                        shuffleIndex++;
+                    } else {
+                        rowPairs.push(null);
+                    }
                 }
             }
-            newSeats.push(row);
+            pairs.push(rowPairs);
         }
 
-        setSeats(newSeats);
+        setSeats(pairs);
     };
+
+    // 줄 수 변경 시 다시 섞기 (seats가 있을 때만)
+    useEffect(() => {
+        if (seats.length > 0) {
+            shuffleSeats();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pairRows]);
 
     // 이미지 저장
     const handleExport = async () => {
@@ -141,7 +182,7 @@ const SeatRandom: React.FC = () => {
             });
 
             const link = document.createElement('a');
-            link.download = `자리배치_${new Date().toLocaleDateString()}.png`;
+            link.download = `짝꿍배치_${new Date().toLocaleDateString()}.png`;
             link.href = dataUrl;
             link.click();
         } catch (e) {
@@ -157,14 +198,14 @@ const SeatRandom: React.FC = () => {
                 {/* 타이틀 */}
                 <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
                     <h1 style={{ fontSize: '2rem', color: '#333', margin: 0, fontWeight: '600' }}>
-                        🪑 자리 배치
+                        🪑 짝꿍 배치
                     </h1>
                     <p style={{ color: '#888', marginTop: '0.3rem', fontSize: '0.9rem' }}>
-                        학생들의 자리를 랜덤으로 배치합니다
+                        학생들의 짝꿍을 랜덤으로 배치합니다
                     </p>
                 </div>
 
-                {/* 모드 선택 + 설정 */}
+                {/* 설정 영역 */}
                 <div style={{
                     display: 'flex',
                     justifyContent: 'center',
@@ -179,7 +220,7 @@ const SeatRandom: React.FC = () => {
                     {/* 모드 토글 */}
                     <div style={{ display: 'flex', gap: '0.3rem' }}>
                         <button
-                            onClick={() => setMode('number')}
+                            onClick={() => handleModeChange('number')}
                             style={{
                                 padding: '0.5rem 1rem',
                                 fontSize: '0.9rem',
@@ -191,10 +232,10 @@ const SeatRandom: React.FC = () => {
                                 cursor: 'pointer'
                             }}
                         >
-                            번호 모드
+                            번호
                         </button>
                         <button
-                            onClick={() => setMode('name')}
+                            onClick={() => handleModeChange('name')}
                             style={{
                                 padding: '0.5rem 1rem',
                                 fontSize: '0.9rem',
@@ -206,28 +247,17 @@ const SeatRandom: React.FC = () => {
                                 cursor: 'pointer'
                             }}
                         >
-                            이름 모드
+                            이름
                         </button>
                     </div>
 
-                    {/* 행/열 설정 */}
+                    {/* 줄 수 */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #eee' }}>
-                        <label style={{ color: '#555', fontWeight: '500', fontSize: '0.9rem' }}>행</label>
+                        <label style={{ color: '#555', fontWeight: '500', fontSize: '0.9rem' }}>줄 수</label>
                         <input
                             type="number"
-                            value={rows}
-                            onChange={(e) => setRows(Math.max(1, parseInt(e.target.value) || 1))}
-                            style={{ padding: '0.4rem', fontSize: '1rem', width: '45px', textAlign: 'center', border: '1px solid #ddd', borderRadius: '6px' }}
-                            min="1"
-                            max="10"
-                        />
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #eee' }}>
-                        <label style={{ color: '#555', fontWeight: '500', fontSize: '0.9rem' }}>열</label>
-                        <input
-                            type="number"
-                            value={cols}
-                            onChange={(e) => setCols(Math.max(1, parseInt(e.target.value) || 1))}
+                            value={pairRows}
+                            onChange={(e) => handlePairRowsChange(parseInt(e.target.value) || 1)}
                             style={{ padding: '0.4rem', fontSize: '1rem', width: '45px', textAlign: 'center', border: '1px solid #ddd', borderRadius: '6px' }}
                             min="1"
                             max="10"
@@ -241,7 +271,7 @@ const SeatRandom: React.FC = () => {
                             <input
                                 type="number"
                                 value={totalStudents}
-                                onChange={(e) => setTotalStudents(Math.max(1, parseInt(e.target.value) || 1))}
+                                onChange={(e) => handleTotalStudentsChange(parseInt(e.target.value) || 1)}
                                 style={{ padding: '0.4rem', fontSize: '1rem', width: '55px', textAlign: 'center', border: '1px solid #ddd', borderRadius: '6px' }}
                                 min="1"
                             />
@@ -263,7 +293,7 @@ const SeatRandom: React.FC = () => {
                                 cursor: 'pointer'
                             }}
                         >
-                            📝 이름 설정 ({names.length}명)
+                            📝 이름 ({names.length}명)
                         </button>
                     )}
                 </div>
@@ -288,7 +318,7 @@ const SeatRandom: React.FC = () => {
                         }}>
                             <h3 style={{ margin: '0 0 0.5rem 0' }}>📝 학생 이름 입력</h3>
                             <p style={{ color: '#666', fontSize: '0.85rem', margin: '0 0 1rem 0' }}>
-                                이름을 줄바꿈 또는 쉼표로 구분하여 입력하세요
+                                줄바꿈, 쉼표, 띄어쓰기로 구분
                             </p>
                             <textarea
                                 value={nameInput}
@@ -343,7 +373,7 @@ const SeatRandom: React.FC = () => {
                             boxShadow: '0 2px 8px rgba(74,144,226,0.3)'
                         }}
                     >
-                        🔀 자리 섞기
+                        🔀 짝꿍 섞기
                     </button>
                     {seats.length > 0 && (
                         <button
@@ -359,27 +389,12 @@ const SeatRandom: React.FC = () => {
                                 cursor: 'pointer'
                             }}
                         >
-                            💾 이미지 저장
+                            💾 저장
                         </button>
                     )}
                 </div>
 
-                {/* 고정석 안내 */}
-                {fixedSeats.size > 0 && (
-                    <div style={{
-                        textAlign: 'center',
-                        marginBottom: '1rem',
-                        padding: '0.6rem 1rem',
-                        background: '#f0f7ff',
-                        borderRadius: '8px',
-                        color: '#0066cc',
-                        fontSize: '0.9rem'
-                    }}>
-                        📌 고정석 {fixedSeats.size}개 적용됨
-                    </div>
-                )}
-
-                {/* 좌석 그리드 */}
+                {/* 좌석 그리드 - 짝꿍 레이아웃 */}
                 <div style={{ display: 'flex', justifyContent: 'center' }}>
                     <div
                         ref={gridRef}
@@ -405,55 +420,93 @@ const SeatRandom: React.FC = () => {
                             📖 칠판
                         </div>
 
-                        {/* 좌석 */}
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: `repeat(${cols}, 1fr)`,
-                            gap: '0.5rem'
-                        }}>
+                        {/* 짝꿍 좌석 */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                             {seats.length > 0 ? (
-                                seats.flat().map((seat, idx) => (
-                                    <div
-                                        key={idx}
-                                        style={{
-                                            minWidth: mode === 'name' ? '70px' : '55px',
-                                            height: '55px',
-                                            padding: '0 0.3rem',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            background: seat ? '#fff' : '#e0e0e0',
-                                            border: '1px solid #ddd',
-                                            borderRadius: '8px',
-                                            fontSize: mode === 'name' ? '0.9rem' : '1.3rem',
-                                            fontWeight: '600',
-                                            color: seat ? '#333' : '#999',
-                                            boxShadow: seat ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                                            whiteSpace: 'nowrap',
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis'
-                                        }}
-                                    >
-                                        {seat?.display || ''}
+                                seats.map((row, rowIdx) => (
+                                    <div key={rowIdx} style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem' }}>
+                                        {Array.from({ length: Math.ceil(row.length / 2) }).map((_, pairIdx) => {
+                                            const left = row[pairIdx * 2];
+                                            const right = row[pairIdx * 2 + 1];
+                                            return (
+                                                <div key={pairIdx} style={{
+                                                    display: 'flex',
+                                                    gap: '2px',
+                                                    background: '#e8e8e8',
+                                                    padding: '3px',
+                                                    borderRadius: '10px'
+                                                }}>
+                                                    <div style={{
+                                                        minWidth: mode === 'name' ? '65px' : '50px',
+                                                        height: '50px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        background: left ? '#fff' : '#f0f0f0',
+                                                        border: '1px solid #ddd',
+                                                        borderRadius: '8px 2px 2px 8px',
+                                                        fontSize: mode === 'name' ? '0.85rem' : '1.2rem',
+                                                        fontWeight: '600',
+                                                        color: left ? '#333' : '#ccc',
+                                                        padding: '0 0.3rem',
+                                                        whiteSpace: 'nowrap',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis'
+                                                    }}>
+                                                        {left?.display || ''}
+                                                    </div>
+                                                    <div style={{
+                                                        minWidth: mode === 'name' ? '65px' : '50px',
+                                                        height: '50px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        background: right ? '#fff' : '#f0f0f0',
+                                                        border: '1px solid #ddd',
+                                                        borderRadius: '2px 8px 8px 2px',
+                                                        fontSize: mode === 'name' ? '0.85rem' : '1.2rem',
+                                                        fontWeight: '600',
+                                                        color: right ? '#333' : '#ccc',
+                                                        padding: '0 0.3rem',
+                                                        whiteSpace: 'nowrap',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis'
+                                                    }}>
+                                                        {right?.display || ''}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 ))
                             ) : (
-                                Array.from({ length: rows * cols }).map((_, idx) => (
-                                    <div
-                                        key={idx}
-                                        style={{
-                                            minWidth: mode === 'name' ? '70px' : '55px',
-                                            height: '55px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            background: '#f5f5f5',
-                                            border: '1px dashed #ccc',
-                                            borderRadius: '8px',
-                                            fontSize: '0.9rem',
-                                            color: '#bbb'
-                                        }}
-                                    >
+                                // 빈 그리드 미리보기
+                                Array.from({ length: pairRows }).map((_, rowIdx) => (
+                                    <div key={rowIdx} style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem' }}>
+                                        {Array.from({ length: pairsPerRow || 3 }).map((_, pairIdx) => (
+                                            <div key={pairIdx} style={{
+                                                display: 'flex',
+                                                gap: '2px',
+                                                background: '#e8e8e8',
+                                                padding: '3px',
+                                                borderRadius: '10px'
+                                            }}>
+                                                <div style={{
+                                                    minWidth: '50px',
+                                                    height: '50px',
+                                                    background: '#f5f5f5',
+                                                    borderRadius: '8px 2px 2px 8px',
+                                                    border: '1px dashed #ddd'
+                                                }} />
+                                                <div style={{
+                                                    minWidth: '50px',
+                                                    height: '50px',
+                                                    background: '#f5f5f5',
+                                                    borderRadius: '2px 8px 8px 2px',
+                                                    border: '1px dashed #ddd'
+                                                }} />
+                                            </div>
+                                        ))}
                                     </div>
                                 ))
                             )}
@@ -461,7 +514,7 @@ const SeatRandom: React.FC = () => {
                     </div>
                 </div>
 
-                {/* 안내 */}
+                {/* 설정 링크 */}
                 <div style={{ marginTop: '1.5rem', textAlign: 'center', color: '#bbb', fontSize: '0.8rem' }}>
                     <a href="/seat/settings" style={{ color: '#aaa', textDecoration: 'none' }}>Setting</a>
                 </div>
