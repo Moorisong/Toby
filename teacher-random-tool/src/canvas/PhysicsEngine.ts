@@ -87,7 +87,17 @@ interface ObstacleVibrator {
     phase: number;
 }
 
-type Obstacle = ObstacleCircle | ObstacleLine | ObstacleRotator | ObstacleLauncher | ObstacleTrap | ObstacleHole | ObstacleGear | ObstacleBumper | ObstacleSpring | ObstacleVibrator;
+interface ObstacleWind {
+    type: 'wind';
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    forceX: number;
+    forceY: number;
+}
+
+type Obstacle = ObstacleCircle | ObstacleLine | ObstacleRotator | ObstacleLauncher | ObstacleTrap | ObstacleHole | ObstacleGear | ObstacleBumper | ObstacleSpring | ObstacleVibrator | ObstacleWind;
 
 export type GameMode = 1 | 2; // 1: 고정, 2: 랜덤
 
@@ -328,6 +338,9 @@ export class PhysicsEngine {
         this.addStaticLine(W, cy, W / 2 + 45, cy + 300);
 
         this.obstacles.push({ type: 'rotator', x: W * 0.5, y: cy + 150, length: W * 0.25, angle: 0, speed: 0.05 });
+
+        // 바람 영역 (깔때기에서 속도 저하)
+        this.obstacles.push({ type: 'wind', x: W * 0.2, y: cy, width: W * 0.6, height: 350, forceX: 0, forceY: -0.5 });
         cy += 350;
 
         // 파이프
@@ -337,7 +350,8 @@ export class PhysicsEngine {
         this.addStaticLine(pipeX - gap, cy, pipeX - gap, cy + pipeLen);
         this.addStaticLine(pipeX + gap, cy, pipeX + gap, cy + pipeLen);
 
-        this.obstacles.push({ type: 'bumper', x: pipeX, y: cy + 150, radius: 12, force: 6 });
+        // 파이프 바람 (더 강한 저항)
+        this.obstacles.push({ type: 'wind', x: pipeX - gap, y: cy, width: gap * 2, height: pipeLen, forceX: 0, forceY: -0.6 });
 
         // World Walls
         this.addStaticLine(0, 0, 0, this.worldHeight);
@@ -620,6 +634,7 @@ export class PhysicsEngine {
                 if (obs.type === 'bumper') this.resolveBumperCollision(ball, obs);
                 if (obs.type === 'spring') this.resolveSpringCollision(ball, obs);
                 if (obs.type === 'vibrator') this.resolveVibratorCollision(ball, obs);
+                if (obs.type === 'wind') this.resolveWindCollision(ball, obs);
             }
 
             if (ball.x - ball.radius < 0) { ball.x = ball.radius; ball.vx *= -this.restitution; }
@@ -724,6 +739,14 @@ export class PhysicsEngine {
             ball.y = trap.penaltyY;
             ball.x = this.width / 2 + (Math.random() - 0.5) * 100;
             ball.vy = 0; ball.vx = (Math.random() - 0.5) * 3;
+        }
+    }
+
+    resolveWindCollision(ball: Ball, wind: ObstacleWind) {
+        if (ball.x > wind.x && ball.x < wind.x + wind.width &&
+            ball.y > wind.y && ball.y < wind.y + wind.height) {
+            ball.vx += wind.forceX;
+            ball.vy += wind.forceY;
         }
     }
 
@@ -928,6 +951,26 @@ export class PhysicsEngine {
                 ctx.lineTo(obs.x + offsetX + obs.width + 5, obs.y);
                 ctx.lineTo(obs.x + offsetX + obs.width + 5, obs.y + obs.height);
                 ctx.stroke();
+            }
+            else if (obs.type === 'wind') {
+                ctx.save();
+                ctx.globalAlpha = 0.15;
+                ctx.fillStyle = '#6cf';
+                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                ctx.globalAlpha = 0.6;
+                ctx.strokeStyle = '#6cf';
+                ctx.lineWidth = 1;
+                // 바람 파티클 애니메이션
+                for (let i = 0; i < 8; i++) {
+                    const px = obs.x + (i % 4 + 0.5) * (obs.width / 4);
+                    const baseY = obs.y + obs.height - (this.frameCount * 3 + i * 50) % obs.height;
+                    ctx.beginPath();
+                    ctx.moveTo(px - 5, baseY + 15);
+                    ctx.lineTo(px, baseY);
+                    ctx.lineTo(px + 5, baseY + 15);
+                    ctx.stroke();
+                }
+                ctx.restore();
             }
         }
 
