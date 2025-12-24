@@ -335,8 +335,18 @@ const SeatRandom: React.FC = () => {
                                     fontFamily: 'inherit'
                                 }}
                             />
-                            <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#888' }}>
-                                인식된 이름: {parseNames(nameInput).length}명
+                            <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#888', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span>인식된 이름: {parseNames(nameInput).length}명</span>
+                                <button
+                                    onClick={() => {
+                                        const testData = "김민준, 이서준, 박지후, 최도윤, 정예준, 강하준, 조준우, 윤시우, 장서연, 임지우, 한수아, 오예린, 신하윤, 서서현, 권지민, 황민서, 안윤서, 송채원, 유소연, 남유진, 백태윤, 노승우, 하준호, 배현우, 문다은, 성은서, 주시현, 류유나, 홍채윤, 전수빈, 고지안, 손연우, 차세아";
+                                        navigator.clipboard.writeText(testData);
+                                        alert('테스트 이름 33명 복사됨!');
+                                    }}
+                                    style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: '#f5f5f5', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer', color: '#666' }}
+                                >
+                                    📋 테스트 데이터
+                                </button>
                             </div>
                             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
                                 <button
