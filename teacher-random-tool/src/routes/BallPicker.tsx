@@ -184,10 +184,10 @@ const BallPicker: React.FC = () => {
                                 fontSize: '1.1rem',
                                 fontWeight: 'bold',
                                 textAlign: 'center',
-                                background: 'rgba(255,255,255,0.9)',
-                                border: '2px solid rgba(0,200,200,0.5)',
+                                background: '#fff',
+                                border: '2px solid #ddd',
                                 borderRadius: '8px',
-                                color: '#0ff',
+                                color: '#333',
                                 outline: 'none'
                             }}
                             min="1"
