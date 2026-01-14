@@ -13,6 +13,13 @@ const BallPicker: React.FC = () => {
     const [gameMode, setGameMode] = useState<1 | 2>(1);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const [winner, setWinner] = useState<number | null>(null);
+    const [simulationSpeed, setSimulationSpeed] = useState<number>(1);
+    const frameCountRef = useRef<number>(0);
+    const simulationSpeedRef = useRef<number>(1);
+
+    useEffect(() => {
+        simulationSpeedRef.current = simulationSpeed;
+    }, [simulationSpeed]);
 
     useEffect(() => {
         if (canvasRef.current && !engineRef.current) {
@@ -36,6 +43,8 @@ const BallPicker: React.FC = () => {
 
         setIsPlaying(true);
         setWinner(null);
+        frameCountRef.current = 0;
+        cancelAnimationFrame(requestRef.current);
 
         const engine = engineRef.current;
 
@@ -45,26 +54,53 @@ const BallPicker: React.FC = () => {
 
         engine.clear();
 
-        const colors = ['#00FFFF', '#FF00FF', '#FFFF00', '#00FF00', '#FFaaaa', '#aaaaFF'];
-        for (let i = 1; i <= totalBalls; i++) {
-            const x = (engine.width / 2) + (Math.random() - 0.5) * 50;
-            const y = Math.random() * 50 - 60;
-            const color = colors[i % colors.length];
-            const ball = new Ball(x, y, 15, i, color);
-            engine.addBall(ball);
+        const colors = ['#4AA8FF', '#FF6B9D', '#FFE66D', '#7CB342', '#FF8A65', '#9575CD', '#FFB74D', '#BA68C8'];
+
+        const ballOrder = Array.from({ length: totalBalls }, (_, i) => i + 1);
+        for (let i = ballOrder.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [ballOrder[i], ballOrder[j]] = [ballOrder[j], ballOrder[i]];
         }
+
+        ballOrder.forEach((ballNumber, index) => {
+            setTimeout(() => {
+                if (!engineRef.current) return;
+
+                const xOffset = (Math.random() - 0.5) * (100 + index * 5);
+                const yOffset = Math.random() * 80 - 60 - (index * 8);
+
+                const x = (engine.width / 2) + xOffset;
+                const y = yOffset;
+                const color = colors[ballNumber % colors.length];
+
+                const ball = new Ball(x, y, 15, ballNumber, color);
+
+                const speedMultiplier = 1 + (index * 0.05);
+                ball.vx *= speedMultiplier;
+                ball.vy *= speedMultiplier;
+
+                engine.addBall(ball);
+            }, index * 120);
+        });
 
         animate();
     };
 
     const animate = () => {
         if (!canvasRef.current || !engineRef.current) return;
+
         const ctx = canvasRef.current.getContext('2d');
         if (!ctx) return;
 
         const engine = engineRef.current;
 
-        engine.update();
+        frameCountRef.current++;
+
+        const updateInterval = Math.max(1, Math.floor(2 / simulationSpeedRef.current));
+        if (frameCountRef.current % updateInterval === 0) {
+            engine.update();
+        }
+
         engine.draw(ctx);
 
         const goalBall = engine.getGoalBall();
@@ -163,7 +199,6 @@ const BallPicker: React.FC = () => {
                         </button>
                     </div>
 
-                    {/* 공 개수 */}
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -196,7 +231,38 @@ const BallPicker: React.FC = () => {
                         />
                     </div>
 
-                    {/* 시작 버튼 */}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        background: 'rgba(240,240,245,0.9)',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(0,0,0,0.1)'
+                    }}>
+                        <span style={{ color: '#333', fontWeight: '500' }}>⚡ 속도</span>
+                        <input
+                            type="range"
+                            min="0.5"
+                            max="2"
+                            step="0.25"
+                            value={simulationSpeed}
+                            onChange={(e) => setSimulationSpeed(parseFloat(e.target.value))}
+                            style={{
+                                width: '80px',
+                                cursor: 'pointer'
+                            }}
+                        />
+                        <span style={{
+                            color: '#333',
+                            fontWeight: 'bold',
+                            fontSize: '0.9rem',
+                            minWidth: '30px'
+                        }}>
+                            {simulationSpeed.toFixed(2)}x
+                        </span>
+                    </div>
+
                     <button
                         onClick={startSimulation}
                         disabled={isPlaying}
