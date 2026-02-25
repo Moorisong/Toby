@@ -97,7 +97,34 @@ interface ObstacleWind {
     forceY: number;
 }
 
-type Obstacle = ObstacleCircle | ObstacleLine | ObstacleRotator | ObstacleLauncher | ObstacleTrap | ObstacleHole | ObstacleGear | ObstacleBumper | ObstacleSpring | ObstacleVibrator | ObstacleWind;
+interface ObstacleBoostZone {
+    type: 'boostZone';
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    boostFactor: number;
+}
+
+interface ObstacleSpinZone {
+    type: 'spinZone';
+    x: number;
+    y: number;
+    radius: number;
+    spinSpeed: number;
+    spinDirection: 1 | -1;
+}
+
+interface ObstaclePortal {
+    type: 'portal';
+    id: number;
+    x: number;
+    y: number;
+    radius: number;
+    targetId: number;
+}
+
+type Obstacle = ObstacleCircle | ObstacleLine | ObstacleRotator | ObstacleLauncher | ObstacleTrap | ObstacleHole | ObstacleGear | ObstacleBumper | ObstacleSpring | ObstacleVibrator | ObstacleWind | ObstacleBoostZone | ObstacleSpinZone | ObstaclePortal;
 
 export type GameMode = 1 | 2; // 1: 고정, 2: 랜덤
 
@@ -368,7 +395,7 @@ export class PhysicsEngine {
         this.addStaticLine(W, 0, W * 0.6, 120);
 
         let cy = 170;
-        const sectionTypes = ['slide', 'gear', 'bumper', 'rotator', 'spring', 'deflector', 'mixed'];
+        const sectionTypes = ['slide', 'gear', 'bumper', 'rotator', 'spring', 'deflector', 'mixed', 'portal', 'boost'];
 
         // 10개 섹션 랜덤 생성
         for (let section = 0; section < 10; section++) {
@@ -395,6 +422,12 @@ export class PhysicsEngine {
                     break;
                 case 'mixed':
                     cy = this.generateMixedSection(cy);
+                    break;
+                case 'portal':
+                    cy = this.generatePortalSection(cy);
+                    break;
+                case 'boost':
+                    cy = this.generateBoostSection(cy);
                     break;
             }
 
@@ -570,7 +603,6 @@ export class PhysicsEngine {
     generateMixedSection(cy: number): number {
         const W = this.width;
 
-        // 톱니 + 범퍼
         if (Math.random() > 0.5) {
             this.obstacles.push({ type: 'gear', x: W * 0.35, y: cy, radius: 35, teeth: 8, angle: 0, speed: 0.035 });
             this.obstacles.push({ type: 'bumper', x: W * 0.65, y: cy, radius: 18, force: 9 });
@@ -580,7 +612,6 @@ export class PhysicsEngine {
         }
         cy += 110;
 
-        // 회전 또는 스프링
         if (Math.random() > 0.5) {
             this.obstacles.push({ type: 'rotator', x: W * 0.5, y: cy, length: W * 0.45, angle: 0, speed: 0.04 });
             cy += 100;
@@ -590,7 +621,41 @@ export class PhysicsEngine {
             cy += 110;
         }
 
-        // 슬라이드
+        this.addStaticLine(W * 0.15, cy, W * 0.5, cy + 50);
+        cy += 90;
+
+        return cy;
+    }
+
+    generatePortalSection(cy: number): number {
+        const W = this.width;
+        const portalId = Math.floor(Math.random() * 1000);
+        
+        const portal1X = W * (0.2 + Math.random() * 0.2);
+        const portal2X = W * (0.6 + Math.random() * 0.2);
+        
+        this.obstacles.push({ type: 'portal', id: portalId, x: portal1X, y: cy, radius: 25, targetId: portalId + 1 });
+        cy += 150;
+        this.obstacles.push({ type: 'portal', id: portalId + 1, x: portal2X, y: cy, radius: 25, targetId: portalId });
+        
+        cy += 100;
+
+        this.addStaticLine(W * 0.15, cy, W * 0.5, cy + 50);
+        cy += 90;
+
+        return cy;
+    }
+
+    generateBoostSection(cy: number): number {
+        const W = this.width;
+        
+        this.obstacles.push({ type: 'boostZone', x: W * 0.1, y: cy, width: W * 0.8, height: 60, boostFactor: 1.4 });
+        cy += 100;
+
+        this.obstacles.push({ type: 'spinZone', x: W * 0.35, y: cy, radius: 40, spinSpeed: 0.08, spinDirection: 1 });
+        this.obstacles.push({ type: 'spinZone', x: W * 0.65, y: cy, radius: 40, spinSpeed: 0.08, spinDirection: -1 });
+        cy += 100;
+
         this.addStaticLine(W * 0.15, cy, W * 0.5, cy + 50);
         cy += 90;
 
@@ -635,6 +700,9 @@ export class PhysicsEngine {
                 if (obs.type === 'spring') this.resolveSpringCollision(ball, obs);
                 if (obs.type === 'vibrator') this.resolveVibratorCollision(ball, obs);
                 if (obs.type === 'wind') this.resolveWindCollision(ball, obs);
+                if (obs.type === 'boostZone') this.resolveBoostZoneCollision(ball, obs);
+                if (obs.type === 'spinZone') this.resolveSpinZoneCollision(ball, obs);
+                if (obs.type === 'portal') this.resolvePortalCollision(ball, obs);
             }
 
             if (ball.x - ball.radius < 0) { ball.x = ball.radius; ball.vx *= -this.restitution; }
@@ -746,9 +814,47 @@ export class PhysicsEngine {
         if (ball.x > wind.x && ball.x < wind.x + wind.width &&
             ball.y > wind.y && ball.y < wind.y + wind.height) {
             ball.vx += wind.forceX;
-            // 바람 효과 적용하되, 최소 하강 속도 보장
             ball.vy += wind.forceY;
-            if (ball.vy < 0.5) ball.vy = 0.5; // 최소 속도 보장
+            if (ball.vy < 0.5) ball.vy = 0.5;
+        }
+    }
+
+    resolveBoostZoneCollision(ball: Ball, boost: ObstacleBoostZone) {
+        if (ball.x > boost.x && ball.x < boost.x + boost.width &&
+            ball.y > boost.y && ball.y < boost.y + boost.height) {
+            ball.vy *= boost.boostFactor;
+            ball.vx *= boost.boostFactor;
+        }
+    }
+
+    resolveSpinZoneCollision(ball: Ball, spin: ObstacleSpinZone) {
+        const dx = ball.x - spin.x;
+        const dy = ball.y - spin.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist < spin.radius) {
+            const spinForce = spin.spinSpeed * spin.spinDirection;
+            const tangentX = -dy / dist * spinForce;
+            const tangentY = dx / dist * spinForce;
+            
+            ball.vx += tangentX;
+            ball.vy += tangentY;
+        }
+    }
+
+    resolvePortalCollision(ball: Ball, portal: ObstaclePortal) {
+        const dx = ball.x - portal.x;
+        const dy = ball.y - portal.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist < portal.radius && ball.vy > 0) {
+            const targetPortal = this.obstacles.find(o => o.type === 'portal' && o.id === portal.targetId);
+            if (targetPortal && targetPortal.type === 'portal') {
+                ball.x = targetPortal.x;
+                ball.y = targetPortal.y + 30;
+                ball.vy = Math.max(ball.vy, 3);
+                ball.vx = (Math.random() - 0.5) * 4;
+            }
         }
     }
 
@@ -818,7 +924,14 @@ export class PhysicsEngine {
             const vx2 = b2.vx * cos + b2.vy * sin, vy2 = b2.vy * cos - b2.vx * sin;
             b1.vx = vx2 * cos - vy1 * sin; b1.vy = vy1 * cos + vx2 * sin;
             b2.vx = vx1 * cos - vy2 * sin; b2.vy = vy2 * cos + vx1 * sin;
-            b1.vx *= 0.9; b1.vy *= 0.9; b2.vx *= 0.9; b2.vy *= 0.9;
+            
+            const randomness = 0.8 + Math.random() * 0.2;
+            b1.vx *= randomness; b1.vy *= randomness; b2.vx *= randomness; b2.vy *= randomness;
+            
+            b1.vx += (Math.random() - 0.5) * 2;
+            b1.vy += (Math.random() - 0.5) * 1;
+            b2.vx += (Math.random() - 0.5) * 2;
+            b2.vy += (Math.random() - 0.5) * 1;
         }
     }
 
@@ -962,7 +1075,6 @@ export class PhysicsEngine {
                 ctx.globalAlpha = 0.6;
                 ctx.strokeStyle = '#6cf';
                 ctx.lineWidth = 1;
-                // 바람 파티클 애니메이션
                 for (let i = 0; i < 8; i++) {
                     const px = obs.x + (i % 4 + 0.5) * (obs.width / 4);
                     const baseY = obs.y + obs.height - (this.frameCount * 3 + i * 50) % obs.height;
@@ -973,6 +1085,84 @@ export class PhysicsEngine {
                     ctx.stroke();
                 }
                 ctx.restore();
+            }
+            else if (obs.type === 'boostZone') {
+                ctx.save();
+                ctx.globalAlpha = 0.2;
+                const pulse = Math.sin(this.frameCount * 0.08) * 0.1 + 0.3;
+                ctx.fillStyle = `rgba(255, 100, 0, ${pulse})`;
+                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                ctx.globalAlpha = 0.8;
+                ctx.strokeStyle = '#f60';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#ff0';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('⚡ BOOST', obs.x + obs.width / 2, obs.y + obs.height / 2 + 5);
+                ctx.restore();
+            }
+            else if (obs.type === 'spinZone') {
+                ctx.save();
+                ctx.globalAlpha = 0.15;
+                ctx.fillStyle = '#a0f';
+                ctx.beginPath();
+                ctx.arc(obs.x, obs.y, obs.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 0.6;
+                ctx.strokeStyle = '#a0f';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([8, 4]);
+                ctx.beginPath();
+                ctx.arc(obs.x, obs.y, obs.radius, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                ctx.save();
+                ctx.translate(obs.x, obs.y);
+                ctx.rotate(this.frameCount * obs.spinSpeed * obs.spinDirection);
+                ctx.strokeStyle = '#f0f';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i / 6) * Math.PI * 2;
+                    ctx.moveTo(Math.cos(angle) * obs.radius * 0.7, Math.sin(angle) * obs.radius * 0.7);
+                    ctx.lineTo(Math.cos(angle) * obs.radius * 0.9, Math.sin(angle) * obs.radius * 0.9);
+                }
+                ctx.stroke();
+                ctx.restore();
+                ctx.restore();
+            }
+            else if (obs.type === 'portal') {
+                const pulse = Math.sin(this.frameCount * 0.1) * 3;
+                ctx.shadowColor = '#0ff';
+                ctx.fillStyle = `rgba(0, 200, 255, ${0.2 + pulse * 0.05})`;
+                ctx.strokeStyle = '#0ff';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(obs.x, obs.y, obs.radius + pulse, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                ctx.save();
+                ctx.translate(obs.x, obs.y);
+                ctx.rotate(-this.frameCount * 0.05);
+                ctx.strokeStyle = 'rgba(0, 255, 255, 0.6)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let a = 0; a < Math.PI * 3; a += 0.15) {
+                    const r = obs.radius * 0.3 + Math.sin(a * 3) * 10;
+                    ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+                }
+                ctx.stroke();
+                ctx.restore();
+                
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 14px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(obs.id.toString(), obs.x, obs.y + 5);
             }
         }
 

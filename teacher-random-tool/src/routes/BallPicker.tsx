@@ -13,6 +13,13 @@ const BallPicker: React.FC = () => {
     const [gameMode, setGameMode] = useState<1 | 2>(1);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const [winner, setWinner] = useState<number | null>(null);
+    const [simulationSpeed, setSimulationSpeed] = useState<number>(1);
+    const frameCountRef = useRef<number>(0);
+    const simulationSpeedRef = useRef<number>(1);
+
+    useEffect(() => {
+        simulationSpeedRef.current = simulationSpeed;
+    }, [simulationSpeed]);
 
     useEffect(() => {
         if (canvasRef.current && !engineRef.current) {
@@ -36,6 +43,8 @@ const BallPicker: React.FC = () => {
 
         setIsPlaying(true);
         setWinner(null);
+        frameCountRef.current = 0;
+        cancelAnimationFrame(requestRef.current);
 
         const engine = engineRef.current;
 
@@ -45,26 +54,53 @@ const BallPicker: React.FC = () => {
 
         engine.clear();
 
-        const colors = ['#00FFFF', '#FF00FF', '#FFFF00', '#00FF00', '#FFaaaa', '#aaaaFF'];
-        for (let i = 1; i <= totalBalls; i++) {
-            const x = (engine.width / 2) + (Math.random() - 0.5) * 50;
-            const y = Math.random() * 50 - 60;
-            const color = colors[i % colors.length];
-            const ball = new Ball(x, y, 15, i, color);
-            engine.addBall(ball);
+        const colors = ['#4AA8FF', '#FF6B9D', '#FFE66D', '#7CB342', '#FF8A65', '#9575CD', '#FFB74D', '#BA68C8'];
+
+        const ballOrder = Array.from({ length: totalBalls }, (_, i) => i + 1);
+        for (let i = ballOrder.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [ballOrder[i], ballOrder[j]] = [ballOrder[j], ballOrder[i]];
         }
+
+        ballOrder.forEach((ballNumber, index) => {
+            setTimeout(() => {
+                if (!engineRef.current) return;
+
+                const xOffset = (Math.random() - 0.5) * (100 + index * 5);
+                const yOffset = Math.random() * 80 - 60 - (index * 8);
+
+                const x = (engine.width / 2) + xOffset;
+                const y = yOffset;
+                const color = colors[ballNumber % colors.length];
+
+                const ball = new Ball(x, y, 15, ballNumber, color);
+
+                const speedMultiplier = 1 + (index * 0.05);
+                ball.vx *= speedMultiplier;
+                ball.vy *= speedMultiplier;
+
+                engine.addBall(ball);
+            }, index * 120);
+        });
 
         animate();
     };
 
     const animate = () => {
         if (!canvasRef.current || !engineRef.current) return;
+
         const ctx = canvasRef.current.getContext('2d');
         if (!ctx) return;
 
         const engine = engineRef.current;
 
-        engine.update();
+        frameCountRef.current++;
+
+        const updateInterval = Math.max(1, Math.floor(2 / simulationSpeedRef.current));
+        if (frameCountRef.current % updateInterval === 0) {
+            engine.update();
+        }
+
         engine.draw(ctx);
 
         const goalBall = engine.getGoalBall();
@@ -96,10 +132,7 @@ const BallPicker: React.FC = () => {
                     <h1 style={{
                         fontSize: '2.5rem',
                         fontWeight: 'bold',
-                        background: 'linear-gradient(90deg, #00FFFF, #FF00FF, #FFFF00)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        textShadow: '0 0 30px rgba(255,0,255,0.3)',
+                        color: '#1a1a1a',
                         margin: 0
                     }}>
                         🎱 공 튀기기 레이스
@@ -163,7 +196,6 @@ const BallPicker: React.FC = () => {
                         </button>
                     </div>
 
-                    {/* 공 개수 */}
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -196,26 +228,52 @@ const BallPicker: React.FC = () => {
                         />
                     </div>
 
-                    {/* 시작 버튼 */}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        background: 'rgba(240,240,245,0.9)',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(0,0,0,0.1)'
+                    }}>
+                        <span style={{ color: '#333', fontWeight: '500' }}>⚡ 속도</span>
+                        <input
+                            type="range"
+                            min="0.5"
+                            max="2"
+                            step="0.25"
+                            value={simulationSpeed}
+                            onChange={(e) => setSimulationSpeed(parseFloat(e.target.value))}
+                            style={{
+                                width: '80px',
+                                cursor: 'pointer'
+                            }}
+                        />
+                        <span style={{
+                            color: '#333',
+                            fontWeight: 'bold',
+                            fontSize: '0.9rem',
+                            minWidth: '30px'
+                        }}>
+                            {simulationSpeed.toFixed(2)}x
+                        </span>
+                    </div>
+
                     <button
                         onClick={startSimulation}
                         disabled={isPlaying}
                         style={{
-                            background: isPlaying
-                                ? 'linear-gradient(135deg, #444, #333)'
-                                : 'linear-gradient(135deg, #ff00ff, #ff6600, #ffff00)',
-                            backgroundSize: '200% 200%',
-                            animation: isPlaying ? 'none' : 'gradient 3s ease infinite',
+                            background: isPlaying ? '#888' : '#4A90E2',
                             border: 'none',
                             color: '#fff',
                             padding: '0.8rem 2rem',
                             fontSize: '1.3rem',
                             fontWeight: 'bold',
                             borderRadius: '12px',
-                            boxShadow: isPlaying ? 'none' : '0 0 25px rgba(255,0,255,0.5)',
+                            boxShadow: isPlaying ? 'none' : '0 4px 12px rgba(74,144,226,0.4)',
                             cursor: isPlaying ? 'not-allowed' : 'pointer',
-                            transition: 'all 0.3s ease',
-                            textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                            transition: 'all 0.3s ease'
                         }}
                     >
                         {isPlaying ? '⏳ 레이싱 중...' : '🚀 START!'}
@@ -241,7 +299,7 @@ const BallPicker: React.FC = () => {
                     margin: '0 auto',
                     borderRadius: '16px',
                     overflow: 'hidden',
-                    boxShadow: '0 0 40px rgba(0,255,255,0.2), 0 0 80px rgba(255,0,255,0.1)'
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
                 }}>
                     <canvas
                         ref={canvasRef}
@@ -250,7 +308,7 @@ const BallPicker: React.FC = () => {
                         height="600"
                         style={{
                             display: 'block',
-                            border: '3px solid rgba(0,255,255,0.3)',
+                            border: '2px solid #ddd',
                             borderRadius: '16px',
                             backgroundColor: '#000'
                         }}
@@ -271,11 +329,11 @@ const BallPicker: React.FC = () => {
                             backdropFilter: 'blur(5px)'
                         }}>
                             <div style={{
-                                background: 'linear-gradient(135deg, rgba(20,20,40,0.95), rgba(40,20,60,0.95))',
-                                border: '3px solid #00FFFF',
+                                background: '#1a1a2e',
+                                border: '2px solid #444',
                                 padding: '2.5rem 4rem',
                                 borderRadius: '24px',
-                                boxShadow: '0 0 60px rgba(0,255,255,0.5), inset 0 0 30px rgba(0,255,255,0.1)',
+                                boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
                                 textAlign: 'center',
                                 animation: 'popIn 0.3s ease'
                             }}>
@@ -291,10 +349,7 @@ const BallPicker: React.FC = () => {
                                 <div style={{
                                     fontSize: '7rem',
                                     fontWeight: 'bold',
-                                    background: 'linear-gradient(135deg, #FF00FF, #00FFFF)',
-                                    WebkitBackgroundClip: 'text',
-                                    WebkitTextFillColor: 'transparent',
-                                    textShadow: '0 0 30px rgba(255,0,255,0.5)',
+                                    color: '#ffffff',
                                     lineHeight: 1
                                 }}>
                                     {winner}
@@ -303,7 +358,7 @@ const BallPicker: React.FC = () => {
                                     onClick={() => setWinner(null)}
                                     style={{
                                         marginTop: '1.5rem',
-                                        background: 'linear-gradient(135deg, #333, #555)',
+                                        background: '#444',
                                         border: '2px solid #666',
                                         color: '#fff',
                                         padding: '0.6rem 2rem',
@@ -323,11 +378,6 @@ const BallPicker: React.FC = () => {
 
             {/* CSS 애니메이션 */}
             <style>{`
-                @keyframes gradient {
-                    0% { background-position: 0% 50%; }
-                    50% { background-position: 100% 50%; }
-                    100% { background-position: 0% 50%; }
-                }
                 @keyframes popIn {
                     0% { transform: scale(0.8); opacity: 0; }
                     100% { transform: scale(1); opacity: 1; }
