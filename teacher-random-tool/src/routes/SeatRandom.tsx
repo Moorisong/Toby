@@ -25,6 +25,7 @@ const SeatRandom: React.FC = () => {
     const [showNameInput, setShowNameInput] = useState<boolean>(false);
     const [seats, setSeats] = useState<(SeatData | null)[][]>([]);
     const [fixedSeats, setFixedSeats] = useState<Map<string, number>>(new Map());
+    const [showShuffleHint, setShowShuffleHint] = useState<boolean>(false);
     const gridRef = useRef<HTMLDivElement>(null);
 
     // Load settings
@@ -115,6 +116,7 @@ const SeatRandom: React.FC = () => {
         setTotalStudents(parsed.length);
         setShowNameInput(false);
         saveToStorage({ names: parsed, totalStudents: parsed.length });
+        if (parsed.length > 0) setShowShuffleHint(true);
     };
 
     const studentCount = mode === 'name' ? names.length : totalStudents;
@@ -366,7 +368,7 @@ const SeatRandom: React.FC = () => {
                                     onClick={() => {
                                         const testData = "김민준, 이서준, 박지후, 최도윤, 정예준, 강하준, 조준우, 윤시우, 장서연, 임지우, 한수아, 오예린, 신하윤, 서서현, 권지민, 황민서, 안윤서, 송채원, 유소연, 남유진, 백태윤, 노승우, 하준호, 배현우, 문다은, 성은서, 주시현, 류유나, 홍채윤, 전수빈, 고지안, 손연우, 차세아";
                                         navigator.clipboard.writeText(testData);
-                                        alert('테스트 이름 33명 복사됨!');
+                                        alert('테스트 이름 33명 복사됨! 붙여넣기 하세요!');
                                     }}
                                     style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: '#f5f5f5', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer', color: '#666' }}
                                 >
@@ -394,8 +396,9 @@ const SeatRandom: React.FC = () => {
                 {/* 버튼 영역 */}
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '0.8rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
                     <button
-                        onClick={shuffleSeats}
+                        onClick={() => { shuffleSeats(); setShowShuffleHint(false); }}
                         disabled={mode === 'name' && names.length === 0}
+                        className={showShuffleHint ? 'btn-pulse-hint' : ''}
                         style={{
                             padding: '0.7rem 1.8rem',
                             fontSize: '1.1rem',
@@ -405,7 +408,7 @@ const SeatRandom: React.FC = () => {
                             border: 'none',
                             borderRadius: '10px',
                             cursor: (mode === 'name' && names.length === 0) ? 'not-allowed' : 'pointer',
-                            boxShadow: '0 2px 8px rgba(74,144,226,0.3)'
+                            boxShadow: showShuffleHint ? undefined : '0 2px 8px rgba(74,144,226,0.3)'
                         }}
                     >
                         🔀 짝꿍 섞기

@@ -20,6 +20,7 @@ const SeatSettings: React.FC = () => {
     const [showNameInput, setShowNameInput] = useState<boolean>(false);
     const [fixedSeats, setFixedSeats] = useState<Map<string, number>>(new Map());
     const [selectedSeat, setSelectedSeat] = useState<{ row: number, pair: number, seat: number } | null>(null);
+    const [showGoHint, setShowGoHint] = useState<boolean>(false);
 
     // 계산된 값
     const studentCount = mode === 'name' ? names.length : totalStudents;
@@ -73,45 +74,11 @@ const SeatSettings: React.FC = () => {
             sessionStorage.setItem(SESSION_KEY_FIXED, JSON.stringify(fixedObj));
         }
     };
-
-    const handlePairRowsChange = (inputStr: string) => {
-        setPairRowsInput(inputStr);
-        const parsed = parseInt(inputStr, 10);
-        if (!isNaN(parsed)) {
-            const newVal = Math.max(1, Math.min(10, parsed));
-            setPairRows(newVal);
-            saveToStorage({ pairRows: newVal });
-        }
-    };
-
-    const handlePairRowsBlur = () => {
-        const clamped = Math.max(1, Math.min(10, parseInt(pairRowsInput, 10) || 1));
-        setPairRows(clamped);
-        setPairRowsInput(String(clamped));
-        saveToStorage({ pairRows: clamped });
-    };
-
-    const handleTotalStudentsChange = (inputStr: string) => {
-        setTotalStudentsInput(inputStr);
-        const parsed = parseInt(inputStr, 10);
-        if (!isNaN(parsed)) {
-            const newVal = Math.max(1, parsed);
-            setTotalStudents(newVal);
-            saveToStorage({ totalStudents: newVal });
-        }
-    };
-
-    const handleTotalStudentsBlur = () => {
-        const clamped = Math.max(1, parseInt(totalStudentsInput, 10) || 1);
-        setTotalStudents(clamped);
-        setTotalStudentsInput(String(clamped));
-        saveToStorage({ totalStudents: clamped });
-    };
-
     const handleModeChange = (newMode: SeatMode) => {
         setMode(newMode);
         saveToStorage({ mode: newMode });
     };
+
 
     const handleNameInputSave = () => {
         const parsed = parseNames(nameInput);
@@ -119,6 +86,7 @@ const SeatSettings: React.FC = () => {
         setTotalStudents(parsed.length);
         setShowNameInput(false);
         saveToStorage({ names: parsed, totalStudents: parsed.length });
+        if (parsed.length > 0) setShowGoHint(true);
     };
 
     const handleSeatClick = (row: number, pair: number, seat: number) => {
@@ -175,10 +143,7 @@ const SeatSettings: React.FC = () => {
                         ⚙️ 짝꿍 배치 설정
                     </h1>
                     <p style={{ color: '#888', marginTop: '0.3rem', fontSize: '0.9rem' }}>
-                        고정석을 설정하세요 (탭을 닫으면 초기화)
-                    </p>
-                    <p style={{ color: '#e74c3c', marginTop: '0.3rem', fontSize: '0.8rem' }}>
-                        ⚠️ 줄 수 변경 시 고정석 위치가 달라질 수 있습니다
+                        고정석을 설정하세요 (브라우저 탭을 닫으면 초기화)
                     </p>
                 </div>
 
@@ -228,28 +193,26 @@ const SeatSettings: React.FC = () => {
                         </button>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #eee' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f5f5f5', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #eee', opacity: 0.5 }}>
                         <label style={{ color: '#555', fontWeight: '500', fontSize: '0.9rem' }}>줄 수</label>
                         <input
                             type="text"
                             inputMode="numeric"
                             value={pairRowsInput}
-                            onChange={(e) => handlePairRowsChange(e.target.value.replace(/[^0-9]/g, ''))}
-                            onBlur={handlePairRowsBlur}
-                            style={{ padding: '0.4rem', fontSize: '1rem', width: '50px', textAlign: 'center', border: '1px solid #ddd', borderRadius: '6px' }}
+                            readOnly
+                            style={{ padding: '0.4rem', fontSize: '1rem', width: '50px', textAlign: 'center', border: '1px solid #ddd', borderRadius: '6px', background: '#eee', cursor: 'not-allowed' }}
                         />
                     </div>
 
                     {mode === 'number' && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #eee' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f5f5f5', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #eee', opacity: 0.5 }}>
                             <label style={{ color: '#555', fontWeight: '500', fontSize: '0.9rem' }}>학생 수</label>
                             <input
                                 type="text"
                                 inputMode="numeric"
                                 value={totalStudentsInput}
-                                onChange={(e) => handleTotalStudentsChange(e.target.value.replace(/[^0-9]/g, ''))}
-                                onBlur={handleTotalStudentsBlur}
-                                style={{ padding: '0.4rem', fontSize: '1rem', width: '60px', textAlign: 'center', border: '1px solid #ddd', borderRadius: '6px' }}
+                                readOnly
+                                style={{ padding: '0.4rem', fontSize: '1rem', width: '60px', textAlign: 'center', border: '1px solid #ddd', borderRadius: '6px', background: '#eee', cursor: 'not-allowed' }}
                             />
                         </div>
                     )}
@@ -316,7 +279,7 @@ const SeatSettings: React.FC = () => {
                                     onClick={() => {
                                         const testData = "김민준, 이서준, 박지후, 최도윤, 정예준, 강하준, 조준우, 윤시우, 장서연, 임지우, 한수아, 오예린, 신하윤, 서서현, 권지민, 황민서, 안윤서, 송채원, 유소연, 남유진, 백태윤, 노승우, 하준호, 배현우, 문다은, 성은서, 주시현, 류유나, 홍채윤, 전수빈, 고지안, 손연우, 차세아";
                                         navigator.clipboard.writeText(testData);
-                                        alert('테스트 이름 33명 복사됨!');
+                                        alert('테스트 이름 33명 복사됨! 붙여넣기 하세요!');
                                     }}
                                     style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: '#f5f5f5', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer', color: '#666' }}
                                 >
@@ -543,7 +506,7 @@ const SeatSettings: React.FC = () => {
                                                         textOverflow: 'ellipsis'
                                                     }}
                                                 >
-                                                    {leftFixed ? getDisplayText(leftFixed) : (leftValid ? getDisplayText(leftSeatNum) : '')}
+                                                    {leftFixed ? getDisplayText(leftFixed) : ''}
                                                 </div>
                                                 {/* 오른쪽 좌석 */}
                                                 <div
@@ -568,7 +531,7 @@ const SeatSettings: React.FC = () => {
                                                         textOverflow: 'ellipsis'
                                                     }}
                                                 >
-                                                    {rightFixed ? getDisplayText(rightFixed) : (rightValid ? getDisplayText(rightSeatNum) : '')}
+                                                    {rightFixed ? getDisplayText(rightFixed) : ''}
                                                 </div>
                                             </div>
                                         );
@@ -583,6 +546,7 @@ const SeatSettings: React.FC = () => {
                 <div style={{ marginTop: '2rem', textAlign: 'center' }}>
                     <a
                         href="/seat"
+                        className={showGoHint ? 'btn-pulse-hint' : ''}
                         style={{
                             display: 'inline-block',
                             padding: '0.8rem 2rem',
@@ -599,7 +563,7 @@ const SeatSettings: React.FC = () => {
                 </div>
 
                 <div style={{ marginTop: '1.5rem', textAlign: 'center', color: '#999', fontSize: '0.85rem' }}>
-                    ⚠️ 고정석은 탭을 닫으면 초기화됩니다
+                    ⚠️ 고정석은 브라우저 탭을 닫으면 초기화됩니다
                 </div>
             </div>
         </div>
