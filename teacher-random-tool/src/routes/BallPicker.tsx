@@ -132,10 +132,7 @@ const BallPicker: React.FC = () => {
                     <h1 style={{
                         fontSize: '2.5rem',
                         fontWeight: 'bold',
-                        background: 'linear-gradient(90deg, #00FFFF, #FF00FF, #FFFF00)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        textShadow: '0 0 30px rgba(255,0,255,0.3)',
+                        color: '#1a1a1a',
                         margin: 0
                     }}>
                         🎱 공 튀기기 레이스
@@ -267,21 +264,16 @@ const BallPicker: React.FC = () => {
                         onClick={startSimulation}
                         disabled={isPlaying}
                         style={{
-                            background: isPlaying
-                                ? 'linear-gradient(135deg, #444, #333)'
-                                : 'linear-gradient(135deg, #ff00ff, #ff6600, #ffff00)',
-                            backgroundSize: '200% 200%',
-                            animation: isPlaying ? 'none' : 'gradient 3s ease infinite',
+                            background: isPlaying ? '#888' : '#4A90E2',
                             border: 'none',
                             color: '#fff',
                             padding: '0.8rem 2rem',
                             fontSize: '1.3rem',
                             fontWeight: 'bold',
                             borderRadius: '12px',
-                            boxShadow: isPlaying ? 'none' : '0 0 25px rgba(255,0,255,0.5)',
+                            boxShadow: isPlaying ? 'none' : '0 4px 12px rgba(74,144,226,0.4)',
                             cursor: isPlaying ? 'not-allowed' : 'pointer',
-                            transition: 'all 0.3s ease',
-                            textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                            transition: 'all 0.3s ease'
                         }}
                     >
                         {isPlaying ? '⏳ 레이싱 중...' : '🚀 START!'}
@@ -307,7 +299,7 @@ const BallPicker: React.FC = () => {
                     margin: '0 auto',
                     borderRadius: '16px',
                     overflow: 'hidden',
-                    boxShadow: '0 0 40px rgba(0,255,255,0.2), 0 0 80px rgba(255,0,255,0.1)'
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
                 }}>
                     <canvas
                         ref={canvasRef}
@@ -316,7 +308,7 @@ const BallPicker: React.FC = () => {
                         height="600"
                         style={{
                             display: 'block',
-                            border: '3px solid rgba(0,255,255,0.3)',
+                            border: '2px solid #ddd',
                             borderRadius: '16px',
                             backgroundColor: '#000'
                         }}
@@ -337,11 +329,11 @@ const BallPicker: React.FC = () => {
                             backdropFilter: 'blur(5px)'
                         }}>
                             <div style={{
-                                background: 'linear-gradient(135deg, rgba(20,20,40,0.95), rgba(40,20,60,0.95))',
-                                border: '3px solid #00FFFF',
+                                background: '#1a1a2e',
+                                border: '2px solid #444',
                                 padding: '2.5rem 4rem',
                                 borderRadius: '24px',
-                                boxShadow: '0 0 60px rgba(0,255,255,0.5), inset 0 0 30px rgba(0,255,255,0.1)',
+                                boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
                                 textAlign: 'center',
                                 animation: 'popIn 0.3s ease'
                             }}>
@@ -357,10 +349,7 @@ const BallPicker: React.FC = () => {
                                 <div style={{
                                     fontSize: '7rem',
                                     fontWeight: 'bold',
-                                    background: 'linear-gradient(135deg, #FF00FF, #00FFFF)',
-                                    WebkitBackgroundClip: 'text',
-                                    WebkitTextFillColor: 'transparent',
-                                    textShadow: '0 0 30px rgba(255,0,255,0.5)',
+                                    color: '#ffffff',
                                     lineHeight: 1
                                 }}>
                                     {winner}
@@ -369,7 +358,7 @@ const BallPicker: React.FC = () => {
                                     onClick={() => setWinner(null)}
                                     style={{
                                         marginTop: '1.5rem',
-                                        background: 'linear-gradient(135deg, #333, #555)',
+                                        background: '#444',
                                         border: '2px solid #666',
                                         color: '#fff',
                                         padding: '0.6rem 2rem',
@@ -389,11 +378,6 @@ const BallPicker: React.FC = () => {
 
             {/* CSS 애니메이션 */}
             <style>{`
-                @keyframes gradient {
-                    0% { background-position: 0% 50%; }
-                    50% { background-position: 100% 50%; }
-                    100% { background-position: 0% 50%; }
-                }
                 @keyframes popIn {
                     0% { transform: scale(0.8); opacity: 0; }
                     100% { transform: scale(1); opacity: 1; }

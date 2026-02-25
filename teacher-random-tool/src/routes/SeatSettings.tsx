@@ -4,6 +4,7 @@ import Header from '../components/Header';
 type SeatMode = 'number' | 'name';
 
 const STORAGE_KEY_PAIRS = 'TRT_SEAT_PAIRS';
+const STORAGE_KEY_COLS = 'TRT_SEAT_COLS';
 const STORAGE_KEY_TOTAL = 'TRT_SEAT_TOTAL';
 const STORAGE_KEY_MODE = 'TRT_SEAT_MODE';
 const STORAGE_KEY_NAMES = 'TRT_SEAT_NAMES';
@@ -12,6 +13,8 @@ const SESSION_KEY_FIXED = 'TRT_SEAT_FIXED_SESSION';
 const SeatSettings: React.FC = () => {
     const [pairRows, setPairRows] = useState<number>(5);
     const [pairRowsInput, setPairRowsInput] = useState<string>('5');
+    const [pairsPerRowDirect, setPairsPerRowDirect] = useState<number>(3);
+    const [pairsPerRowInput, setPairsPerRowInput] = useState<string>('3');
     const [totalStudents, setTotalStudents] = useState<number>(30);
     const [totalStudentsInput, setTotalStudentsInput] = useState<string>('30');
     const [mode, setMode] = useState<SeatMode>('number');
@@ -22,10 +25,8 @@ const SeatSettings: React.FC = () => {
     const [selectedSeat, setSelectedSeat] = useState<{ row: number, pair: number, seat: number } | null>(null);
     const [showGoHint, setShowGoHint] = useState<boolean>(false);
 
-    // 계산된 값
     const studentCount = mode === 'name' ? names.length : totalStudents;
-    const totalPairs = Math.ceil(studentCount / 2) || 1;
-    const pairsPerRow = Math.max(1, Math.ceil(totalPairs / pairRows));
+    const pairsPerRow = pairsPerRowDirect;
 
     // 이름 파싱
     const parseNames = (input: string): string[] => {
@@ -38,12 +39,14 @@ const SeatSettings: React.FC = () => {
     // Load settings
     useEffect(() => {
         const savedPairs = localStorage.getItem(STORAGE_KEY_PAIRS);
+        const savedCols = localStorage.getItem(STORAGE_KEY_COLS);
         const savedTotal = localStorage.getItem(STORAGE_KEY_TOTAL);
         const savedMode = localStorage.getItem(STORAGE_KEY_MODE);
         const savedNames = localStorage.getItem(STORAGE_KEY_NAMES);
         const savedFixed = sessionStorage.getItem(SESSION_KEY_FIXED);
 
         if (savedPairs) { const v = parseInt(savedPairs); setPairRows(v); setPairRowsInput(String(v)); }
+        if (savedCols) { const v = parseInt(savedCols); setPairsPerRowDirect(v); setPairsPerRowInput(String(v)); }
         if (savedTotal) { const v = parseInt(savedTotal); setTotalStudents(v); setTotalStudentsInput(String(v)); }
         if (savedMode) setMode(savedMode as SeatMode);
         if (savedNames) {
@@ -193,15 +196,24 @@ const SeatSettings: React.FC = () => {
                         </button>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f5f5f5', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #eee', opacity: 0.5 }}>
-                        <label style={{ color: '#555', fontWeight: '500', fontSize: '0.9rem' }}>줄 수</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#f5f5f5', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #eee', opacity: 0.5 }}>
+                        <label style={{ color: '#555', fontWeight: '500', fontSize: '0.9rem' }}>배치</label>
+                        <input
+                            type="text"
+                            inputMode="numeric"
+                            value={pairsPerRowInput}
+                            readOnly
+                            style={{ padding: '0.4rem', fontSize: '1rem', width: '38px', textAlign: 'center', border: '1px solid #ddd', borderRadius: '6px', background: '#eee', cursor: 'not-allowed' }}
+                        />
+                        <span style={{ color: '#bbb', fontWeight: '500', fontSize: '1rem' }}>×</span>
                         <input
                             type="text"
                             inputMode="numeric"
                             value={pairRowsInput}
                             readOnly
-                            style={{ padding: '0.4rem', fontSize: '1rem', width: '50px', textAlign: 'center', border: '1px solid #ddd', borderRadius: '6px', background: '#eee', cursor: 'not-allowed' }}
+                            style={{ padding: '0.4rem', fontSize: '1rem', width: '38px', textAlign: 'center', border: '1px solid #ddd', borderRadius: '6px', background: '#eee', cursor: 'not-allowed' }}
                         />
+                        <span style={{ color: '#bbb', fontSize: '0.75rem' }}>(열×줄)</span>
                     </div>
 
                     {mode === 'number' && (

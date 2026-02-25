@@ -9,6 +9,7 @@ interface SeatData {
 type SeatMode = 'number' | 'name';
 
 const STORAGE_KEY_PAIRS = 'TRT_SEAT_PAIRS';
+const STORAGE_KEY_COLS = 'TRT_SEAT_COLS';
 const STORAGE_KEY_MODE = 'TRT_SEAT_MODE';
 const STORAGE_KEY_NAMES = 'TRT_SEAT_NAMES';
 const STORAGE_KEY_TOTAL = 'TRT_SEAT_TOTAL';
@@ -17,6 +18,8 @@ const SESSION_KEY_FIXED = 'TRT_SEAT_FIXED_SESSION';
 const SeatRandom: React.FC = () => {
     const [pairRows, setPairRows] = useState<number>(5);
     const [pairRowsInput, setPairRowsInput] = useState<string>('5');
+    const [pairsPerRowDirect, setPairsPerRowDirect] = useState<number>(3);
+    const [pairsPerRowInput, setPairsPerRowInput] = useState<string>('3');
     const [mode, setMode] = useState<SeatMode>('number');
     const [totalStudents, setTotalStudents] = useState<number>(30);
     const [totalStudentsInput, setTotalStudentsInput] = useState<string>('30');
@@ -31,12 +34,14 @@ const SeatRandom: React.FC = () => {
     // Load settings
     useEffect(() => {
         const savedPairs = localStorage.getItem(STORAGE_KEY_PAIRS);
+        const savedCols = localStorage.getItem(STORAGE_KEY_COLS);
         const savedMode = localStorage.getItem(STORAGE_KEY_MODE);
         const savedTotal = localStorage.getItem(STORAGE_KEY_TOTAL);
         const savedNames = localStorage.getItem(STORAGE_KEY_NAMES);
         const savedFixed = sessionStorage.getItem(SESSION_KEY_FIXED);
 
         if (savedPairs) { const v = parseInt(savedPairs); setPairRows(v); setPairRowsInput(String(v)); }
+        if (savedCols) { const v = parseInt(savedCols); setPairsPerRowDirect(v); setPairsPerRowInput(String(v)); }
         if (savedMode) setMode(savedMode as SeatMode);
         if (savedTotal) { const v = parseInt(savedTotal); setTotalStudents(v); setTotalStudentsInput(String(v)); }
         if (savedNames) {
@@ -53,11 +58,13 @@ const SeatRandom: React.FC = () => {
     // 저장 함수
     const saveToStorage = (data: {
         pairRows?: number;
+        pairsPerRowDirect?: number;
         totalStudents?: number;
         mode?: SeatMode;
         names?: string[];
     }) => {
         if (data.pairRows !== undefined) localStorage.setItem(STORAGE_KEY_PAIRS, data.pairRows.toString());
+        if (data.pairsPerRowDirect !== undefined) localStorage.setItem(STORAGE_KEY_COLS, data.pairsPerRowDirect.toString());
         if (data.totalStudents !== undefined) localStorage.setItem(STORAGE_KEY_TOTAL, data.totalStudents.toString());
         if (data.mode !== undefined) localStorage.setItem(STORAGE_KEY_MODE, data.mode);
         if (data.names !== undefined) localStorage.setItem(STORAGE_KEY_NAMES, JSON.stringify(data.names));
@@ -75,17 +82,34 @@ const SeatRandom: React.FC = () => {
         setPairRowsInput(inputStr);
         const parsed = parseInt(inputStr, 10);
         if (!isNaN(parsed)) {
-            const newVal = Math.max(1, Math.min(10, parsed));
+            const newVal = Math.max(1, Math.min(20, parsed));
             setPairRows(newVal);
             saveToStorage({ pairRows: newVal });
         }
     };
 
     const handlePairRowsBlur = () => {
-        const clamped = Math.max(1, Math.min(10, parseInt(pairRowsInput, 10) || 1));
+        const clamped = Math.max(1, Math.min(20, parseInt(pairRowsInput, 10) || 1));
         setPairRows(clamped);
         setPairRowsInput(String(clamped));
         saveToStorage({ pairRows: clamped });
+    };
+
+    const handlePairsPerRowChange = (inputStr: string) => {
+        setPairsPerRowInput(inputStr);
+        const parsed = parseInt(inputStr, 10);
+        if (!isNaN(parsed)) {
+            const newVal = Math.max(1, Math.min(20, parsed));
+            setPairsPerRowDirect(newVal);
+            saveToStorage({ pairsPerRowDirect: newVal });
+        }
+    };
+
+    const handlePairsPerRowBlur = () => {
+        const clamped = Math.max(1, Math.min(20, parseInt(pairsPerRowInput, 10) || 1));
+        setPairsPerRowDirect(clamped);
+        setPairsPerRowInput(String(clamped));
+        saveToStorage({ pairsPerRowDirect: clamped });
     };
 
     const handleTotalStudentsChange = (inputStr: string) => {
@@ -120,8 +144,7 @@ const SeatRandom: React.FC = () => {
     };
 
     const studentCount = mode === 'name' ? names.length : totalStudents;
-    const totalPairs = Math.ceil(studentCount / 2);
-    const pairsPerRow = Math.max(1, Math.ceil(totalPairs / pairRows));
+    const pairsPerRow = pairsPerRowDirect; // 직접 입력한 열 수
 
     // 학생 표시 텍스트 가져오기
     const getStudentDisplay = useCallback((index: number): string => {
@@ -134,9 +157,9 @@ const SeatRandom: React.FC = () => {
     // 셔플 함수 (고정석 반영)
     const shuffleSeats = () => {
         const studentList = mode === 'name' ? [...names] : Array.from({ length: totalStudents }, (_, i) => String(i + 1));
-        const count = studentList.length;
 
-        if (count === 0) return;
+        if (studentCount === 0) return;
+        const count = studentCount;
 
         // 고정석에 배치된 학생 인덱스들 (0-based)
         const fixedStudentIndices = new Set<number>();
@@ -189,13 +212,13 @@ const SeatRandom: React.FC = () => {
         setSeats(pairs);
     };
 
-    // 줄 수 변경 시 다시 섞기 (seats가 있을 때만)
+    // 줄 수 / 열 수 변경 시 다시 섞기 (seats가 있을 때만)
     useEffect(() => {
         if (seats.length > 0) {
             shuffleSeats();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pairRows]);
+    }, [pairRows, pairsPerRowDirect]);
 
     // 이미지 저장
     const handleExport = async () => {
@@ -277,17 +300,27 @@ const SeatRandom: React.FC = () => {
                         </button>
                     </div>
 
-                    {/* 줄 수 */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #eee' }}>
-                        <label style={{ color: '#555', fontWeight: '500', fontSize: '0.9rem' }}>줄 수</label>
+                    {/* 배치 (열×줄) */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#fff', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #eee' }}>
+                        <label style={{ color: '#555', fontWeight: '500', fontSize: '0.9rem' }}>배치</label>
+                        <input
+                            type="text"
+                            inputMode="numeric"
+                            value={pairsPerRowInput}
+                            onChange={(e) => handlePairsPerRowChange(e.target.value.replace(/[^0-9]/g, ''))}
+                            onBlur={handlePairsPerRowBlur}
+                            style={{ padding: '0.4rem', fontSize: '1rem', width: '38px', textAlign: 'center', border: '1px solid #ddd', borderRadius: '6px' }}
+                        />
+                        <span style={{ color: '#aaa', fontWeight: '500', fontSize: '1rem' }}>×</span>
                         <input
                             type="text"
                             inputMode="numeric"
                             value={pairRowsInput}
                             onChange={(e) => handlePairRowsChange(e.target.value.replace(/[^0-9]/g, ''))}
                             onBlur={handlePairRowsBlur}
-                            style={{ padding: '0.4rem', fontSize: '1rem', width: '45px', textAlign: 'center', border: '1px solid #ddd', borderRadius: '6px' }}
+                            style={{ padding: '0.4rem', fontSize: '1rem', width: '38px', textAlign: 'center', border: '1px solid #ddd', borderRadius: '6px' }}
                         />
+                        <span style={{ color: '#aaa', fontSize: '0.75rem' }}>(열×줄)</span>
                     </div>
 
                     {/* 번호 모드: 학생 수 */}
