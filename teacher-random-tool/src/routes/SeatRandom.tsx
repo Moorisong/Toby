@@ -16,8 +16,10 @@ const SESSION_KEY_FIXED = 'TRT_SEAT_FIXED_SESSION';
 
 const SeatRandom: React.FC = () => {
     const [pairRows, setPairRows] = useState<number>(5);
+    const [pairRowsInput, setPairRowsInput] = useState<string>('5');
     const [mode, setMode] = useState<SeatMode>('number');
     const [totalStudents, setTotalStudents] = useState<number>(30);
+    const [totalStudentsInput, setTotalStudentsInput] = useState<string>('30');
     const [names, setNames] = useState<string[]>([]);
     const [nameInput, setNameInput] = useState<string>('');
     const [showNameInput, setShowNameInput] = useState<boolean>(false);
@@ -33,9 +35,9 @@ const SeatRandom: React.FC = () => {
         const savedNames = localStorage.getItem(STORAGE_KEY_NAMES);
         const savedFixed = sessionStorage.getItem(SESSION_KEY_FIXED);
 
-        if (savedPairs) setPairRows(parseInt(savedPairs));
+        if (savedPairs) { const v = parseInt(savedPairs); setPairRows(v); setPairRowsInput(String(v)); }
         if (savedMode) setMode(savedMode as SeatMode);
-        if (savedTotal) setTotalStudents(parseInt(savedTotal));
+        if (savedTotal) { const v = parseInt(savedTotal); setTotalStudents(v); setTotalStudentsInput(String(v)); }
         if (savedNames) {
             const parsed = JSON.parse(savedNames);
             setNames(parsed);
@@ -68,16 +70,38 @@ const SeatRandom: React.FC = () => {
             .filter(s => s.length > 0);
     };
 
-    const handlePairRowsChange = (val: number) => {
-        const newVal = Math.max(1, val);
-        setPairRows(newVal);
-        saveToStorage({ pairRows: newVal });
+    const handlePairRowsChange = (inputStr: string) => {
+        setPairRowsInput(inputStr);
+        const parsed = parseInt(inputStr, 10);
+        if (!isNaN(parsed)) {
+            const newVal = Math.max(1, Math.min(10, parsed));
+            setPairRows(newVal);
+            saveToStorage({ pairRows: newVal });
+        }
     };
 
-    const handleTotalStudentsChange = (val: number) => {
-        const newVal = Math.max(1, val);
-        setTotalStudents(newVal);
-        saveToStorage({ totalStudents: newVal });
+    const handlePairRowsBlur = () => {
+        const clamped = Math.max(1, Math.min(10, parseInt(pairRowsInput, 10) || 1));
+        setPairRows(clamped);
+        setPairRowsInput(String(clamped));
+        saveToStorage({ pairRows: clamped });
+    };
+
+    const handleTotalStudentsChange = (inputStr: string) => {
+        setTotalStudentsInput(inputStr);
+        const parsed = parseInt(inputStr, 10);
+        if (!isNaN(parsed)) {
+            const newVal = Math.max(1, parsed);
+            setTotalStudents(newVal);
+            saveToStorage({ totalStudents: newVal });
+        }
+    };
+
+    const handleTotalStudentsBlur = () => {
+        const clamped = Math.max(1, parseInt(totalStudentsInput, 10) || 1);
+        setTotalStudents(clamped);
+        setTotalStudentsInput(String(clamped));
+        saveToStorage({ totalStudents: clamped });
     };
 
     const handleModeChange = (newMode: SeatMode) => {
@@ -255,12 +279,12 @@ const SeatRandom: React.FC = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #eee' }}>
                         <label style={{ color: '#555', fontWeight: '500', fontSize: '0.9rem' }}>줄 수</label>
                         <input
-                            type="number"
-                            value={pairRows}
-                            onChange={(e) => handlePairRowsChange(parseInt(e.target.value) || 1)}
+                            type="text"
+                            inputMode="numeric"
+                            value={pairRowsInput}
+                            onChange={(e) => handlePairRowsChange(e.target.value.replace(/[^0-9]/g, ''))}
+                            onBlur={handlePairRowsBlur}
                             style={{ padding: '0.4rem', fontSize: '1rem', width: '45px', textAlign: 'center', border: '1px solid #ddd', borderRadius: '6px' }}
-                            min="1"
-                            max="10"
                         />
                     </div>
 
@@ -269,11 +293,12 @@ const SeatRandom: React.FC = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #eee' }}>
                             <label style={{ color: '#555', fontWeight: '500', fontSize: '0.9rem' }}>학생 수</label>
                             <input
-                                type="number"
-                                value={totalStudents}
-                                onChange={(e) => handleTotalStudentsChange(parseInt(e.target.value) || 1)}
+                                type="text"
+                                inputMode="numeric"
+                                value={totalStudentsInput}
+                                onChange={(e) => handleTotalStudentsChange(e.target.value.replace(/[^0-9]/g, ''))}
+                                onBlur={handleTotalStudentsBlur}
                                 style={{ padding: '0.4rem', fontSize: '1rem', width: '55px', textAlign: 'center', border: '1px solid #ddd', borderRadius: '6px' }}
-                                min="1"
                             />
                         </div>
                     )}
