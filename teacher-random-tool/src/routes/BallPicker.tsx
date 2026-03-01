@@ -97,7 +97,7 @@ const BallPicker: React.FC = () => {
 
         frameCountRef.current++;
 
-        const updateInterval = Math.max(1, Math.floor(2 / simulationSpeedRef.current));
+        const updateInterval = Math.max(1, Math.floor(2 / (simulationSpeedRef.current * 1.5)));
         if (frameCountRef.current % updateInterval === 0) {
             engine.update();
         }
