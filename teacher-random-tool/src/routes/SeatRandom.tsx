@@ -148,7 +148,7 @@ const SeatRandom: React.FC = () => {
         // 세팅 데이터(고정석 또는 빈 자리)가 있으면 경고
         const hasSettings = fixedSeats.size > 0 || emptySeats.size > 0;
         if (hasSettings) {
-            const confirmed = confirm('이름을 변경하면 고정석·빈 자리 설정이 모두 초기화됩니다.\n변경하시겠습니까?');
+            const confirmed = confirm('이름 목록을 변경하면 고정석 등 모든 세팅 값이 초기화됩니다.\n변경하시겠습니까?');
             if (!confirmed) return;
 
             // 세팅 초기화
