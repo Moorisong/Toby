@@ -78,6 +78,73 @@ h3 {
   animation: pulse-hint 0.9s ease-in-out infinite;
 }
 
+/* 이름 입력 유도 애니메이션 */
+@keyframes name-nudge {
+  0% {
+    transform: scale(1) translateY(0);
+    box-shadow: 0 0 0 0 rgba(226, 74, 144, 0.5);
+  }
+
+  20% {
+    transform: scale(1.07) translateY(-2px);
+    box-shadow: 0 0 0 8px rgba(226, 74, 144, 0);
+  }
+
+  40% {
+    transform: scale(1) translateY(0);
+    box-shadow: 0 0 0 0 rgba(226, 74, 144, 0);
+  }
+
+  100% {
+    transform: scale(1) translateY(0);
+    box-shadow: 0 0 0 0 rgba(226, 74, 144, 0);
+  }
+}
+
+@keyframes name-nudge-arrow {
+
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+
+  20%,
+  80% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(4px);
+  }
+}
+
+.btn-name-nudge {
+  animation: name-nudge 2s ease-in-out infinite;
+  position: relative;
+}
+
+.btn-name-nudge::after {
+  content: '👆 여기를 눌러 이름을 입력하세요!';
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #E24A90;
+  background: #fff0f6;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #f5c2d4;
+  box-shadow: 0 2px 8px rgba(226, 74, 144, 0.15);
+  animation: name-nudge-arrow 2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 10;
+}
+
 /* ── 묘록(Myorok) 광고 배너 ── */
 .myorok-banner {
   display: block;
