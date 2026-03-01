@@ -15,6 +15,7 @@ const STORAGE_KEY_MODE = 'TRT_SEAT_MODE';
 const STORAGE_KEY_NAMES = 'TRT_SEAT_NAMES';
 const STORAGE_KEY_TOTAL = 'TRT_SEAT_TOTAL';
 const SESSION_KEY_FIXED = 'TRT_SEAT_FIXED_SESSION';
+const SESSION_KEY_EMPTY = 'TRT_SEAT_EMPTY_SESSION';
 
 const SeatRandom: React.FC = () => {
     const [pairRows, setPairRows] = useState<number>(5);
@@ -29,6 +30,7 @@ const SeatRandom: React.FC = () => {
     const [showNameInput, setShowNameInput] = useState<boolean>(false);
     const [seats, setSeats] = useState<(SeatData | null)[][]>([]);
     const [fixedSeats, setFixedSeats] = useState<Map<string, number>>(new Map());
+    const [emptySeats, setEmptySeats] = useState<Set<string>>(new Set());
     const [showShuffleHint, setShowShuffleHint] = useState<boolean>(false);
     const gridRef = useRef<HTMLDivElement>(null);
 
@@ -40,6 +42,7 @@ const SeatRandom: React.FC = () => {
         const savedTotal = localStorage.getItem(STORAGE_KEY_TOTAL);
         const savedNames = localStorage.getItem(STORAGE_KEY_NAMES);
         const savedFixed = sessionStorage.getItem(SESSION_KEY_FIXED);
+        const savedEmpty = sessionStorage.getItem(SESSION_KEY_EMPTY);
 
         if (savedPairs) { const v = parseInt(savedPairs); setPairRows(v); setPairRowsInput(String(v)); }
         if (savedCols) { const v = parseInt(savedCols); setPairsPerRowDirect(v); setPairsPerRowInput(String(v)); }
@@ -53,6 +56,10 @@ const SeatRandom: React.FC = () => {
         if (savedFixed) {
             const parsed = JSON.parse(savedFixed);
             setFixedSeats(new Map(Object.entries(parsed).map(([k, v]) => [k, v as number])));
+        }
+        if (savedEmpty) {
+            const parsed: string[] = JSON.parse(savedEmpty);
+            setEmptySeats(new Set(parsed));
         }
     }, []);
 
@@ -193,6 +200,13 @@ const SeatRandom: React.FC = () => {
             for (let p = 0; p < pairsPerRow; p++) {
                 for (let seat = 0; seat < 2; seat++) {
                     const posKey = `${row}-${p}-${seat}`;
+
+                    // 빈 자리: 아무도 배정하지 않음
+                    if (emptySeats.has(posKey)) {
+                        rowPairs.push({ display: '🚫' });
+                        continue;
+                    }
+
                     const fixedStudentIdx = fixedSeats.get(posKey);
 
                     if (fixedStudentIdx && fixedStudentIdx > 0 && fixedStudentIdx <= count) {
@@ -514,12 +528,14 @@ const SeatRandom: React.FC = () => {
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         justifyContent: 'center',
-                                                        background: left ? '#fff' : '#f0f0f0',
-                                                        border: '1px solid #ddd',
+                                                        background: left?.display === '🚫'
+                                                            ? 'repeating-linear-gradient(45deg, #f0f0f0, #f0f0f0 5px, #e0e0e0 5px, #e0e0e0 10px)'
+                                                            : left ? '#fff' : '#f0f0f0',
+                                                        border: left?.display === '🚫' ? '2px solid #aaa' : '1px solid #ddd',
                                                         borderRadius: '8px 2px 2px 8px',
-                                                        fontSize: mode === 'name' ? '0.85rem' : '1.2rem',
+                                                        fontSize: left?.display === '🚫' ? '1.2rem' : mode === 'name' ? '0.85rem' : '1.2rem',
                                                         fontWeight: '600',
-                                                        color: left ? '#333' : '#ccc',
+                                                        color: left?.display === '🚫' ? '#999' : left ? '#333' : '#ccc',
                                                         padding: '0 0.3rem',
                                                         whiteSpace: 'nowrap',
                                                         overflow: 'hidden',
@@ -533,12 +549,14 @@ const SeatRandom: React.FC = () => {
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         justifyContent: 'center',
-                                                        background: right ? '#fff' : '#f0f0f0',
-                                                        border: '1px solid #ddd',
+                                                        background: right?.display === '🚫'
+                                                            ? 'repeating-linear-gradient(45deg, #f0f0f0, #f0f0f0 5px, #e0e0e0 5px, #e0e0e0 10px)'
+                                                            : right ? '#fff' : '#f0f0f0',
+                                                        border: right?.display === '🚫' ? '2px solid #aaa' : '1px solid #ddd',
                                                         borderRadius: '2px 8px 8px 2px',
-                                                        fontSize: mode === 'name' ? '0.85rem' : '1.2rem',
+                                                        fontSize: right?.display === '🚫' ? '1.2rem' : mode === 'name' ? '0.85rem' : '1.2rem',
                                                         fontWeight: '600',
-                                                        color: right ? '#333' : '#ccc',
+                                                        color: right?.display === '🚫' ? '#999' : right ? '#333' : '#ccc',
                                                         padding: '0 0.3rem',
                                                         whiteSpace: 'nowrap',
                                                         overflow: 'hidden',
