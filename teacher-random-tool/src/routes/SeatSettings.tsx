@@ -9,6 +9,7 @@ const STORAGE_KEY_TOTAL = 'TRT_SEAT_TOTAL';
 const STORAGE_KEY_MODE = 'TRT_SEAT_MODE';
 const STORAGE_KEY_NAMES = 'TRT_SEAT_NAMES';
 const SESSION_KEY_FIXED = 'TRT_SEAT_FIXED_SESSION';
+const SESSION_KEY_EMPTY = 'TRT_SEAT_EMPTY_SESSION';
 
 const SeatSettings: React.FC = () => {
     const [pairRows, setPairRows] = useState<number>(5);
@@ -22,6 +23,7 @@ const SeatSettings: React.FC = () => {
     const [nameInput, setNameInput] = useState<string>('');
     const [showNameInput, setShowNameInput] = useState<boolean>(false);
     const [fixedSeats, setFixedSeats] = useState<Map<string, number>>(new Map());
+    const [emptySeats, setEmptySeats] = useState<Set<string>>(new Set());
     const [selectedSeat, setSelectedSeat] = useState<{ row: number, pair: number, seat: number } | null>(null);
     const [showGoHint, setShowGoHint] = useState<boolean>(false);
 
@@ -44,6 +46,7 @@ const SeatSettings: React.FC = () => {
         const savedMode = localStorage.getItem(STORAGE_KEY_MODE);
         const savedNames = localStorage.getItem(STORAGE_KEY_NAMES);
         const savedFixed = sessionStorage.getItem(SESSION_KEY_FIXED);
+        const savedEmpty = sessionStorage.getItem(SESSION_KEY_EMPTY);
 
         if (savedPairs) { const v = parseInt(savedPairs); setPairRows(v); setPairRowsInput(String(v)); }
         if (savedCols) { const v = parseInt(savedCols); setPairsPerRowDirect(v); setPairsPerRowInput(String(v)); }
@@ -58,6 +61,10 @@ const SeatSettings: React.FC = () => {
             const parsed = JSON.parse(savedFixed);
             setFixedSeats(new Map(Object.entries(parsed).map(([k, v]) => [k, v as number])));
         }
+        if (savedEmpty) {
+            const parsed: string[] = JSON.parse(savedEmpty);
+            setEmptySeats(new Set(parsed));
+        }
     }, []);
 
     // 저장 함수
@@ -67,6 +74,7 @@ const SeatSettings: React.FC = () => {
         mode?: SeatMode;
         names?: string[];
         fixedSeats?: Map<string, number>;
+        emptySeats?: Set<string>;
     }) => {
         if (data.pairRows !== undefined) localStorage.setItem(STORAGE_KEY_PAIRS, data.pairRows.toString());
         if (data.totalStudents !== undefined) localStorage.setItem(STORAGE_KEY_TOTAL, data.totalStudents.toString());
@@ -75,6 +83,9 @@ const SeatSettings: React.FC = () => {
         if (data.fixedSeats !== undefined) {
             const fixedObj = Object.fromEntries(data.fixedSeats);
             sessionStorage.setItem(SESSION_KEY_FIXED, JSON.stringify(fixedObj));
+        }
+        if (data.emptySeats !== undefined) {
+            sessionStorage.setItem(SESSION_KEY_EMPTY, JSON.stringify([...data.emptySeats]));
         }
     };
     const handleModeChange = (newMode: SeatMode) => {
@@ -102,6 +113,10 @@ const SeatSettings: React.FC = () => {
         const posKey = `${selectedSeat.row}-${selectedSeat.pair}-${selectedSeat.seat}`;
         const newFixed = new Map(fixedSeats);
 
+        // 빈 자리였다면 해제
+        const newEmpty = new Set(emptySeats);
+        newEmpty.delete(posKey);
+
         // 해제 (studentIdx가 0이거나 유효하지 않으면)
         if (studentIdx <= 0 || studentIdx > studentCount) {
             newFixed.delete(posKey);
@@ -116,8 +131,31 @@ const SeatSettings: React.FC = () => {
         }
 
         setFixedSeats(newFixed);
+        setEmptySeats(newEmpty);
         setSelectedSeat(null);
-        saveToStorage({ fixedSeats: newFixed });
+        saveToStorage({ fixedSeats: newFixed, emptySeats: newEmpty });
+    };
+
+    const toggleEmptySeat = () => {
+        if (!selectedSeat) return;
+
+        const posKey = `${selectedSeat.row}-${selectedSeat.pair}-${selectedSeat.seat}`;
+        const newEmpty = new Set(emptySeats);
+        const newFixed = new Map(fixedSeats);
+
+        if (newEmpty.has(posKey)) {
+            // 빈 자리 해제
+            newEmpty.delete(posKey);
+        } else {
+            // 빈 자리 설정 → 고정석이었다면 해제
+            newEmpty.add(posKey);
+            newFixed.delete(posKey);
+        }
+
+        setEmptySeats(newEmpty);
+        setFixedSeats(newFixed);
+        setSelectedSeat(null);
+        saveToStorage({ emptySeats: newEmpty, fixedSeats: newFixed });
     };
 
     const clearAllFixed = () => {
@@ -125,6 +163,14 @@ const SeatSettings: React.FC = () => {
             const emptyMap = new Map<string, number>();
             setFixedSeats(emptyMap);
             saveToStorage({ fixedSeats: emptyMap });
+        }
+    };
+
+    const clearAllEmpty = () => {
+        if (confirm('모든 빈 자리를 해제하시겠습니까?')) {
+            const emptySet = new Set<string>();
+            setEmptySeats(emptySet);
+            saveToStorage({ emptySeats: emptySet });
         }
     };
 
@@ -316,13 +362,16 @@ const SeatSettings: React.FC = () => {
                     </div>
                 )}
 
-                {/* 고정석 현황 */}
+                {/* 고정석 & 빈 자리 현황 */}
                 <div style={{
                     marginBottom: '1rem',
                     padding: '1rem',
                     background: '#f0f7ff',
                     borderRadius: '10px',
-                    border: '1px solid #cce0ff'
+                    border: '1px solid #cce0ff',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.5rem'
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontWeight: '600', color: '#0066cc' }}>
@@ -345,14 +394,35 @@ const SeatSettings: React.FC = () => {
                             </button>
                         )}
                     </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontWeight: '600', color: '#888' }}>
+                            🚫 빈 자리: {emptySeats.size}개
+                        </span>
+                        {emptySeats.size > 0 && (
+                            <button
+                                onClick={clearAllEmpty}
+                                style={{
+                                    padding: '0.4rem 0.8rem',
+                                    fontSize: '0.85rem',
+                                    background: '#fff',
+                                    color: '#d00',
+                                    border: '1px solid #fcc',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                전체 해제
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 {/* 안내 */}
                 <div style={{ textAlign: 'center', marginBottom: '1rem', color: '#666', fontSize: '0.9rem' }}>
-                    👆 좌석 클릭 → 학생 {mode === 'name' ? '이름' : '번호'} 입력 → 그 자리에 고정
+                    👆 좌석 클릭 → 고정석 또는 빈 자리 설정
                 </div>
 
-                {/* 고정석 입력 모달 */}
+                {/* 좌석 설정 모달 */}
                 {selectedSeat && (
                     <div style={{
                         position: 'fixed',
@@ -371,11 +441,43 @@ const SeatSettings: React.FC = () => {
                             minWidth: '320px'
                         }}>
                             <h3 style={{ margin: '0 0 1rem 0' }}>
-                                📌 {selectedSeat.row + 1}줄 {selectedSeat.pair + 1}번째 {selectedSeat.seat === 0 ? '왼쪽' : '오른쪽'}
+                                {selectedSeat.row + 1}줄 {selectedSeat.pair + 1}번째 {selectedSeat.seat === 0 ? '왼쪽' : '오른쪽'}
                             </h3>
                             <p style={{ color: '#666', fontSize: '0.9rem', margin: '0 0 1rem 0' }}>
-                                이 자리에 앉힐 학생 선택
+                                이 자리에 앉힐 학생을 선택하거나 빈 자리로 설정하세요
                             </p>
+
+                            {/* 빈 자리 토글 */}
+                            {(() => {
+                                const posKey = `${selectedSeat.row}-${selectedSeat.pair}-${selectedSeat.seat}`;
+                                const isCurrentlyEmpty = emptySeats.has(posKey);
+                                return (
+                                    <button
+                                        onClick={toggleEmptySeat}
+                                        style={{
+                                            display: 'block',
+                                            width: '220px',
+                                            margin: '0 auto 1rem auto',
+                                            padding: '0.8rem 1rem',
+                                            fontSize: '1rem',
+                                            fontWeight: '600',
+                                            background: isCurrentlyEmpty ? '#888' : '#f5f5f5',
+                                            color: isCurrentlyEmpty ? '#fff' : '#666',
+                                            border: isCurrentlyEmpty ? '2px solid #888' : '2px dashed #ccc',
+                                            borderRadius: '10px',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        {isCurrentlyEmpty ? '🚫 빈 자리 해제' : '🚫 빈 자리로 설정'}
+                                    </button>
+                                );
+                            })()}
+
+                            <div style={{ borderTop: '1px solid #eee', paddingTop: '1rem', marginBottom: '1rem' }}>
+                                <p style={{ color: '#999', fontSize: '0.8rem', margin: '0 0 0.5rem 0' }}>또는 고정석 설정</p>
+                            </div>
+
                             {mode === 'name' ? (
                                 <select
                                     id="fixedSeatInput"
@@ -444,7 +546,7 @@ const SeatSettings: React.FC = () => {
                                     }}
                                     style={{ padding: '0.6rem 1.2rem', background: '#4A90E2', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
                                 >
-                                    저장
+                                    고정
                                 </button>
                             </div>
                         </div>
@@ -484,6 +586,8 @@ const SeatSettings: React.FC = () => {
                                         const rightKey = `${rowIdx}-${pairIdx}-1`;
                                         const leftFixed = fixedSeats.get(leftKey);
                                         const rightFixed = fixedSeats.get(rightKey);
+                                        const leftEmpty = emptySeats.has(leftKey);
+                                        const rightEmpty = emptySeats.has(rightKey);
                                         const leftValid = leftSeatNum <= studentCount;
                                         const rightValid = rightSeatNum <= studentCount;
 
@@ -497,20 +601,22 @@ const SeatSettings: React.FC = () => {
                                             }}>
                                                 {/* 왼쪽 좌석 */}
                                                 <div
-                                                    onClick={() => leftValid && handleSeatClick(rowIdx, pairIdx, 0)}
+                                                    onClick={() => handleSeatClick(rowIdx, pairIdx, 0)}
                                                     style={{
                                                         minWidth: mode === 'name' ? '60px' : '48px',
                                                         height: '48px',
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         justifyContent: 'center',
-                                                        background: leftFixed ? '#e8f4ff' : (leftValid ? '#fff' : '#f5f5f5'),
-                                                        border: leftFixed ? '2px solid #4A90E2' : '1px solid #ddd',
+                                                        background: leftEmpty
+                                                            ? 'repeating-linear-gradient(45deg, #f0f0f0, #f0f0f0 5px, #e0e0e0 5px, #e0e0e0 10px)'
+                                                            : leftFixed ? '#e8f4ff' : (leftValid ? '#fff' : '#f5f5f5'),
+                                                        border: leftEmpty ? '2px solid #aaa' : leftFixed ? '2px solid #4A90E2' : '1px solid #ddd',
                                                         borderRadius: '8px 2px 2px 8px',
-                                                        fontSize: mode === 'name' ? '0.75rem' : (leftFixed ? '1rem' : '0.75rem'),
+                                                        fontSize: leftEmpty ? '1.2rem' : mode === 'name' ? '0.75rem' : (leftFixed ? '1rem' : '0.75rem'),
                                                         fontWeight: leftFixed ? '600' : '400',
-                                                        color: leftFixed ? '#0066cc' : (leftValid ? '#999' : '#ccc'),
-                                                        cursor: leftValid ? 'pointer' : 'default',
+                                                        color: leftEmpty ? '#999' : leftFixed ? '#0066cc' : (leftValid ? '#999' : '#ccc'),
+                                                        cursor: 'pointer',
                                                         transition: 'all 0.2s',
                                                         padding: '0 0.2rem',
                                                         whiteSpace: 'nowrap',
@@ -518,24 +624,26 @@ const SeatSettings: React.FC = () => {
                                                         textOverflow: 'ellipsis'
                                                     }}
                                                 >
-                                                    {leftFixed ? getDisplayText(leftFixed) : ''}
+                                                    {leftEmpty ? '🚫' : leftFixed ? getDisplayText(leftFixed) : ''}
                                                 </div>
                                                 {/* 오른쪽 좌석 */}
                                                 <div
-                                                    onClick={() => rightValid && handleSeatClick(rowIdx, pairIdx, 1)}
+                                                    onClick={() => handleSeatClick(rowIdx, pairIdx, 1)}
                                                     style={{
                                                         minWidth: mode === 'name' ? '60px' : '48px',
                                                         height: '48px',
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         justifyContent: 'center',
-                                                        background: rightFixed ? '#e8f4ff' : (rightValid ? '#fff' : '#f5f5f5'),
-                                                        border: rightFixed ? '2px solid #4A90E2' : '1px solid #ddd',
+                                                        background: rightEmpty
+                                                            ? 'repeating-linear-gradient(45deg, #f0f0f0, #f0f0f0 5px, #e0e0e0 5px, #e0e0e0 10px)'
+                                                            : rightFixed ? '#e8f4ff' : (rightValid ? '#fff' : '#f5f5f5'),
+                                                        border: rightEmpty ? '2px solid #aaa' : rightFixed ? '2px solid #4A90E2' : '1px solid #ddd',
                                                         borderRadius: '2px 8px 8px 2px',
-                                                        fontSize: mode === 'name' ? '0.75rem' : (rightFixed ? '1rem' : '0.75rem'),
+                                                        fontSize: rightEmpty ? '1.2rem' : mode === 'name' ? '0.75rem' : (rightFixed ? '1rem' : '0.75rem'),
                                                         fontWeight: rightFixed ? '600' : '400',
-                                                        color: rightFixed ? '#0066cc' : (rightValid ? '#999' : '#ccc'),
-                                                        cursor: rightValid ? 'pointer' : 'default',
+                                                        color: rightEmpty ? '#999' : rightFixed ? '#0066cc' : (rightValid ? '#999' : '#ccc'),
+                                                        cursor: 'pointer',
                                                         transition: 'all 0.2s',
                                                         padding: '0 0.2rem',
                                                         whiteSpace: 'nowrap',
@@ -543,7 +651,7 @@ const SeatSettings: React.FC = () => {
                                                         textOverflow: 'ellipsis'
                                                     }}
                                                 >
-                                                    {rightFixed ? getDisplayText(rightFixed) : ''}
+                                                    {rightEmpty ? '🚫' : rightFixed ? getDisplayText(rightFixed) : ''}
                                                 </div>
                                             </div>
                                         );
