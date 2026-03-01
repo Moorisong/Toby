@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import '../styles/global.css';
+import HarooButton from '../components/HarooButton';
 
 const tools = [
     {
@@ -40,6 +41,7 @@ const Home: React.FC = () => {
             justifyContent: 'center',
             padding: '2rem'
         }}>
+
             {/* 로고 & 타이틀 */}
             <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
                 <div style={{
@@ -155,6 +157,11 @@ const Home: React.FC = () => {
                         </div>
                     </Link>
                 ))}
+            </div>
+
+            {/* 하루상자 바로가기 */}
+            <div style={{ marginTop: '2.5rem' }}>
+                <HarooButton />
             </div>
 
             {/* 하단 푸터 */}
