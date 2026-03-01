@@ -77,3 +77,159 @@ h3 {
 .btn-pulse-hint {
   animation: pulse-hint 0.9s ease-in-out infinite;
 }
+
+/* ── 묘록(Myorok) 광고 배너 ── */
+.myorok-banner {
+  display: block;
+  text-decoration: none;
+  background: #f7f7f7;
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.myorok-banner:hover {
+  background: #f0f0f0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.myorok-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.myorok-icon-section {
+  flex-shrink: 0;
+}
+
+.myorok-app-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  object-fit: contain;
+}
+
+.myorok-text-section {
+  flex: 1;
+  min-width: 0;
+}
+
+.myorok-label {
+  display: block;
+  font-size: 0.7rem;
+  color: #9ca3af;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+}
+
+.myorok-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 0.25rem 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.myorok-description {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.myorok-cta-section {
+  flex-shrink: 0;
+}
+
+.myorok-cta-button {
+  display: inline-block;
+  background: linear-gradient(to right, #22c55e, #10b981);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.5rem 0.875rem;
+  border-radius: 20px;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.myorok-banner:hover .myorok-cta-button {
+  background: linear-gradient(to right, #16a34a, #059669);
+}
+
+.myorok-mobile-only {
+  display: none;
+}
+
+.myorok-desktop-only {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .myorok-mobile-only {
+    display: block;
+  }
+
+  .myorok-desktop-only {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .myorok-banner {
+    padding: 0.875rem 1rem;
+  }
+
+  .myorok-banner-content {
+    gap: 0.75rem;
+  }
+
+  .myorok-app-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .myorok-label {
+    font-size: 0.65rem;
+  }
+
+  .myorok-title {
+    font-size: 0.875rem;
+  }
+
+  .myorok-description {
+    font-size: 0.7rem;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
+
+  .myorok-cta-button {
+    font-size: 0.7rem;
+    padding: 0.4rem 0.75rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .myorok-cta-section {
+    display: none;
+  }
+
+  .myorok-description::after {
+    content: ' →';
+    color: #7c3aed;
+    font-weight: 600;
+  }
+}

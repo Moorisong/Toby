@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Header from '../components/Header';
+import MyorokBanner from '../components/MyorokBanner';
 import { PhysicsEngine } from '../canvas/PhysicsEngine';
 import { Ball } from '../canvas/Ball';
 
@@ -373,6 +374,11 @@ const BallPicker: React.FC = () => {
                             </div>
                         </div>
                     )}
+                </div>
+
+                {/* 묘록 광고 배너 */}
+                <div style={{ marginTop: '2.5rem', marginBottom: '2rem' }}>
+                    <MyorokBanner />
                 </div>
             </div>
 

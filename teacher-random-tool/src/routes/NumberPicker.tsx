@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Header from '../components/Header';
 import NumberSlot from '../components/NumberSlot';
+import MyorokBanner from '../components/MyorokBanner';
 import { loadFromStorage, saveToStorage, STORAGE_KEYS } from '../utils/storage';
 import { pickRandomNumbers } from '../utils/random';
 
@@ -254,6 +255,11 @@ const NumberPicker: React.FC = () => {
                     fontSize: '0.85rem'
                 }}>
                     💡 설정은 자동으로 저장됩니다
+                </div>
+
+                {/* 묘록 광고 배너 */}
+                <div style={{ marginTop: '2.5rem', marginBottom: '2rem' }}>
+                    <MyorokBanner />
                 </div>
             </div>
         </div>
