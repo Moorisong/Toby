@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Header from '../components/Header';
+import MyorokBanner from '../components/MyorokBanner';
 import { toPng } from 'html-to-image';
 
 interface SeatData {
@@ -588,6 +589,11 @@ const SeatRandom: React.FC = () => {
                 {/* 설정 링크 */}
                 <div style={{ marginTop: '1.5rem', textAlign: 'center', color: '#bbb', fontSize: '0.8rem' }}>
                     <a href="/seat/settings" style={{ color: '#aaa', textDecoration: 'none' }}>Setting</a>
+                </div>
+
+                {/* 묘록 광고 배너 */}
+                <div style={{ marginTop: '2.5rem', marginBottom: '2rem' }}>
+                    <MyorokBanner />
                 </div>
             </div>
         </div>
