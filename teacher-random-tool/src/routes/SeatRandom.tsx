@@ -144,6 +144,22 @@ const SeatRandom: React.FC = () => {
 
     const handleNameInputSave = () => {
         const parsed = parseNames(nameInput);
+
+        // 세팅 데이터(고정석 또는 빈 자리)가 있으면 경고
+        const hasSettings = fixedSeats.size > 0 || emptySeats.size > 0;
+        if (hasSettings) {
+            const confirmed = confirm('이름을 변경하면 고정석·빈 자리 설정이 모두 초기화됩니다.\n변경하시겠습니까?');
+            if (!confirmed) return;
+
+            // 세팅 초기화
+            const emptyMap = new Map<string, number>();
+            const emptySet = new Set<string>();
+            setFixedSeats(emptyMap);
+            setEmptySeats(emptySet);
+            sessionStorage.removeItem(SESSION_KEY_FIXED);
+            sessionStorage.removeItem(SESSION_KEY_EMPTY);
+        }
+
         setNames(parsed);
         setTotalStudents(parsed.length);
         setShowNameInput(false);
@@ -355,21 +371,24 @@ const SeatRandom: React.FC = () => {
 
                     {/* 이름 모드: 이름 설정 버튼 */}
                     {mode === 'name' && (
-                        <button
-                            onClick={() => setShowNameInput(true)}
-                            style={{
-                                padding: '0.5rem 1rem',
-                                fontSize: '0.9rem',
-                                fontWeight: '500',
-                                background: '#fff',
-                                color: '#E24A90',
-                                border: '1px solid #E24A90',
-                                borderRadius: '8px',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            📝 이름 ({names.length}명)
-                        </button>
+                        <div style={{ position: 'relative' }}>
+                            <button
+                                onClick={() => setShowNameInput(true)}
+                                className={names.length === 0 ? 'btn-name-nudge' : ''}
+                                style={{
+                                    padding: '0.5rem 1rem',
+                                    fontSize: '0.9rem',
+                                    fontWeight: '500',
+                                    background: names.length === 0 ? '#fff0f6' : '#fff',
+                                    color: '#E24A90',
+                                    border: names.length === 0 ? '2px solid #E24A90' : '1px solid #E24A90',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                📝 이름 ({names.length}명)
+                            </button>
+                        </div>
                     )}
                 </div>
 
