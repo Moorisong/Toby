@@ -2,29 +2,27 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import '../styles/global.css';
 import MyorokBanner from '../components/MyorokBanner';
+import { APP_TITLES } from '../constants/app';
 
 const tools = [
     {
         path: '/number',
-        icon: '🎲',
-        title: '번호 뽑기',
-        description: '학생 번호를 랜덤으로 선택',
+        title: APP_TITLES.NUMBER,
+        description: '학생 번호를 원하는만큼 랜덤으로 뽑기',
         color: '#4A90E2',
         gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
     },
     {
         path: '/ball',
-        icon: '🎱',
-        title: '공 튀기기',
-        description: '레이스로 순위 결정',
+        title: APP_TITLES.BALL,
+        description: '귀여운 공들의 레이스로 1등 뽑기',
         color: '#E24A90',
         gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
     },
     {
         path: '/seat',
-        icon: '🪑',
-        title: '자리 배치',
-        description: '짝꿍 자리 랜덤 배치',
+        title: APP_TITLES.SEAT,
+        description: '교실 자리 랜덤으로 배치하기',
         color: '#50C878',
         gradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)'
     }
@@ -39,13 +37,11 @@ const Home: React.FC = () => {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '2rem'
         }}>
 
             {/* 로고 & 타이틀 */}
-            <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <div style={{ textAlign: 'center', marginBottom: '3em' }}>
                 <div style={{
-                    marginBottom: '1rem',
                     filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.1))'
                 }}>
                     <img src="/logo.png" alt="Toby Logo" style={{ width: '120px', height: '120px', objectFit: 'contain' }} />
@@ -115,14 +111,6 @@ const Home: React.FC = () => {
                                 background: tool.gradient
                             }} />
 
-                            {/* 아이콘 */}
-                            <div style={{
-                                fontSize: '3rem',
-                                marginBottom: '1rem'
-                            }}>
-                                {tool.icon}
-                            </div>
-
                             {/* 제목 */}
                             <h2 style={{
                                 fontSize: '1.4rem',
@@ -160,13 +148,13 @@ const Home: React.FC = () => {
             </div>
 
             {/* 묘록 배너 */}
-            <div style={{ marginTop: '3rem', width: '100%' }}>
+            <div style={{ marginTop: '10rem', width: '100%' }}>
                 <MyorokBanner />
             </div>
 
             {/* 하단 푸터 */}
             <div style={{
-                marginTop: '3rem',
+                marginTop: '2rem',
                 color: '#aaa',
                 fontSize: '0.85rem'
             }}>

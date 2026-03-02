@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { APP_TITLES } from '../constants/app';
 
 const Header: React.FC = () => {
     return (
@@ -13,9 +14,9 @@ const Header: React.FC = () => {
                 }}>TOBY</Link>
             </h1>
             <nav className="toby-header-nav">
-                <Link to="/number">번호 뽑기</Link>
-                <Link to="/ball">공 튀기기</Link>
-                <Link to="/seat">자리 배치</Link>
+                <Link to="/number">{APP_TITLES.NUMBER}</Link>
+                <Link to="/ball">{APP_TITLES.BALL}</Link>
+                <Link to="/seat">{APP_TITLES.SEAT}</Link>
             </nav>
         </header>
     );
