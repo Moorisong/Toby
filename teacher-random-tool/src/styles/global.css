@@ -242,12 +242,12 @@ h3 {
 }
 
 .myorok-desktop-only {
-  display: block;
+  display: inline;
 }
 
 @media (max-width: 768px) {
   .myorok-mobile-only {
-    display: block;
+    display: inline;
   }
 
   .myorok-desktop-only {
@@ -298,5 +298,101 @@ h3 {
     content: ' →';
     color: #7c3aed;
     font-weight: 600;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   반응형 레이아웃
+   ══════════════════════════════════════════════ */
+
+/* ── Header CSS 클래스 ── */
+.toby-header {
+  padding: 0.8rem 1.5rem;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.toby-header-logo {
+  margin: 0;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.toby-header-nav {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.toby-header-nav a {
+  text-decoration: none;
+  color: #555;
+  padding: 0.4rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.toby-header-nav a:hover {
+  background: #f0f0f0;
+}
+
+/* ── 캔버스 반응형 ── */
+#ball-canvas {
+  max-width: 100%;
+  display: block;
+}
+
+/* ── 좌석 그리드 가로 스크롤 ── */
+.seat-grid-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.5rem;
+}
+
+/* 태블릿 (max-width: 768px) */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  /* Header 폰트/패딩 */
+  .toby-header {
+    padding: 0.7rem 1rem;
+  }
+
+  .toby-header-logo {
+    font-size: 1.3rem;
+  }
+
+  .toby-header-nav a {
+    font-size: 0.82rem;
+    padding: 0.35rem 0.55rem;
+  }
+}
+
+/* 모바일 (max-width: 480px) */
+@media (max-width: 480px) {
+  .container {
+    padding: 0.75rem;
+  }
+
+  .toby-header {
+    padding: 0.6rem 0.75rem;
+  }
+
+  .toby-header-logo {
+    font-size: 1.2rem;
+  }
+
+  .toby-header-nav a {
+    font-size: 0.78rem;
+    padding: 0.3rem 0.45rem;
   }
 }

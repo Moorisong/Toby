@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import '../styles/global.css';
-import HarooButton from '../components/HarooButton';
+import MyorokBanner from '../components/MyorokBanner';
 
 const tools = [
     {
@@ -159,9 +159,9 @@ const Home: React.FC = () => {
                 ))}
             </div>
 
-            {/* 하루상자 바로가기 */}
-            <div style={{ marginTop: '2.5rem' }}>
-                <HarooButton />
+            {/* 묘록 배너 */}
+            <div style={{ marginTop: '3rem', width: '100%' }}>
+                <MyorokBanner />
             </div>
 
             {/* 하단 푸터 */}
