@@ -17,6 +17,7 @@ const BallPicker: React.FC = () => {
     const [simulationSpeed, setSimulationSpeed] = useState<number>(1);
     const frameCountRef = useRef<number>(0);
     const simulationSpeedRef = useRef<number>(1);
+    const accumulatorRef = useRef<number>(0);
 
     useEffect(() => {
         simulationSpeedRef.current = simulationSpeed;
@@ -45,6 +46,7 @@ const BallPicker: React.FC = () => {
         setIsPlaying(true);
         setWinner(null);
         frameCountRef.current = 0;
+        accumulatorRef.current = 0;
         cancelAnimationFrame(requestRef.current);
 
         const engine = engineRef.current;
@@ -97,9 +99,15 @@ const BallPicker: React.FC = () => {
 
         frameCountRef.current++;
 
-        const updateInterval = Math.max(1, Math.floor(2 / (simulationSpeedRef.current * 1.5)));
-        if (frameCountRef.current % updateInterval === 0) {
+        // 1.0 속도를 기존보다 더 느리게(0.6배속) 설정
+        const baseSpeedMultiplier = 0.6;
+        accumulatorRef.current += simulationSpeedRef.current * baseSpeedMultiplier;
+
+        let updatesThisFrame = 0;
+        while (accumulatorRef.current >= 1 && updatesThisFrame < 3) {
             engine.update();
+            accumulatorRef.current -= 1;
+            updatesThisFrame++;
         }
 
         engine.draw(ctx);
