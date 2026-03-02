@@ -7,7 +7,7 @@ import React from 'react';
  */
 const MyorokBanner: React.FC = () => {
     return (
-        <div style={{ maxWidth: '600px', margin: '0 auto', padding: '0 1rem' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0 1rem' }}>
             <a
                 href="https://myorok.vercel.app/"
                 target="_blank"
@@ -29,7 +29,7 @@ const MyorokBanner: React.FC = () => {
                         <span className="myorok-label">고양이 집사를 위한 추천 앱</span>
                         <h4 className="myorok-title">
                             <span className="myorok-desktop-only">환묘 및 고양이 건강 기록 앱, 묘록</span>
-                            <span className="myorok-mobile-only">환묘 및 고양이 건강 기록 앱, 묘록</span>
+                            <span className="myorok-mobile-only">고양이 건강 기록 앱, 묘록</span>
                         </h4>
                         <p className="myorok-description">
                             배변 기록 · 투약 현황 · 건강 상태 메모를 한 곳에서 관리하세요
