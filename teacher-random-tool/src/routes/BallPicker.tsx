@@ -3,6 +3,7 @@ import Header from '../components/Header';
 import MyorokBanner from '../components/MyorokBanner';
 import { PhysicsEngine } from '../canvas/PhysicsEngine';
 import { Ball } from '../canvas/Ball';
+import { APP_TITLES } from '../constants/app';
 
 const BallPicker: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -144,10 +145,10 @@ const BallPicker: React.FC = () => {
                         color: '#1a1a1a',
                         margin: 0
                     }}>
-                        🎱 공 튀기기 레이스
+                        {APP_TITLES.BALL}
                     </h1>
                     <p style={{ color: '#666', marginTop: '0.5rem' }}>
-                        {gameMode === 1 ? '고정된 코스에서 레이싱!' : '매번 새로운 랜덤 코스!'}
+                        {gameMode === 1 ? '고정된 코스에서 레이싱으로 1등 뽑기' : '매번 새로운 랜덤 코스! 1등은 누구?'}
                     </p>
                 </div>
 
@@ -183,7 +184,7 @@ const BallPicker: React.FC = () => {
                                 transition: 'all 0.2s ease'
                             }}
                         >
-                            🎯 고정 맵
+                            고정 맵
                         </button>
                         <button
                             onClick={() => handleModeChange(2)}
@@ -201,7 +202,7 @@ const BallPicker: React.FC = () => {
                                 transition: 'all 0.2s ease'
                             }}
                         >
-                            🎲 랜덤 맵
+                            랜덤 맵
                         </button>
                     </div>
 
@@ -214,7 +215,7 @@ const BallPicker: React.FC = () => {
                         borderRadius: '10px',
                         border: '1px solid rgba(0,0,0,0.1)'
                     }}>
-                        <span style={{ color: '#333', fontWeight: '500' }}>🎾 공 개수</span>
+                        <span style={{ color: '#333', fontWeight: '500' }}>공 개수</span>
                         <input
                             type="number"
                             value={totalBalls}
@@ -285,7 +286,7 @@ const BallPicker: React.FC = () => {
                             transition: 'all 0.3s ease'
                         }}
                     >
-                        {isPlaying ? '⏳ 레이싱 중...' : '🚀 START!'}
+                        {isPlaying ? '레이싱 중...' : 'START!'}
                     </button>
                 </div>
 

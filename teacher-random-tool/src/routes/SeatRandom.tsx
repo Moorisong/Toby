@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Header from '../components/Header';
 import MyorokBanner from '../components/MyorokBanner';
 import { toPng } from 'html-to-image';
+import { APP_TITLES } from '../constants/app';
 
 interface SeatData {
     display: string;
@@ -278,10 +279,10 @@ const SeatRandom: React.FC = () => {
                 {/* 타이틀 */}
                 <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
                     <h1 style={{ fontSize: '2rem', color: '#333', margin: 0, fontWeight: '600' }}>
-                        🪑 짝꿍 배치
+                        {APP_TITLES.SEAT}
                     </h1>
                     <p style={{ color: '#888', marginTop: '0.3rem', fontSize: '0.9rem' }}>
-                        학생들의 짝꿍을 랜덤으로 배치합니다
+                        학생들의 자리를 랜덤으로 배치합니다
                     </p>
                 </div>
 
@@ -478,7 +479,7 @@ const SeatRandom: React.FC = () => {
                             boxShadow: showShuffleHint ? undefined : '0 2px 8px rgba(74,144,226,0.3)'
                         }}
                     >
-                        🔀 짝꿍 섞기
+                        짝궁 섞기
                     </button>
                     {seats.length > 0 && (
                         <button
@@ -494,7 +495,7 @@ const SeatRandom: React.FC = () => {
                                 cursor: 'pointer'
                             }}
                         >
-                            💾 저장
+                            이미지로 저장
                         </button>
                     )}
                 </div>

@@ -4,6 +4,7 @@ import NumberSlot from '../components/NumberSlot';
 import MyorokBanner from '../components/MyorokBanner';
 import { loadFromStorage, saveToStorage, STORAGE_KEYS } from '../utils/storage';
 import { pickRandomNumbers } from '../utils/random';
+import { APP_TITLES } from '../constants/app';
 
 const NumberPicker: React.FC = () => {
     // State for settings
@@ -94,7 +95,7 @@ const NumberPicker: React.FC = () => {
                         margin: 0,
                         fontWeight: '600'
                     }}>
-                        🎲 번호 뽑기
+                        {APP_TITLES.NUMBER}
                     </h1>
                     <p style={{ color: '#888', marginTop: '0.3rem', fontSize: '0.9rem' }}>
                         랜덤으로 번호를 추첨합니다
