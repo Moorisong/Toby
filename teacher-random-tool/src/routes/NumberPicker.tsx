@@ -4,6 +4,7 @@ import NumberSlot from '../components/NumberSlot';
 import MyorokBanner from '../components/MyorokBanner';
 import { loadFromStorage, saveToStorage, STORAGE_KEYS } from '../utils/storage';
 import { pickRandomNumbers } from '../utils/random';
+import { APP_TITLES } from '../constants/app';
 
 const NumberPicker: React.FC = () => {
     // State for settings
@@ -83,182 +84,212 @@ const NumberPicker: React.FC = () => {
     }, [animationDoneCount, pickCount, isAnimating]);
 
     return (
-        <div style={{ minHeight: '100vh', background: '#ffffff' }}>
+        <div style={{
+            minHeight: '100vh',
+            background: 'linear-gradient(180deg, #f8faff 0%, #f0f4f8 100%)',
+            fontFamily: "'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif"
+        }}>
             <Header />
-            <div className="container" style={{ maxWidth: '800px', paddingTop: '1.5rem' }}>
+            <div className="container" style={{ maxWidth: '640px', padding: '2.5rem 1.5rem' }}>
                 {/* 타이틀 */}
-                <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
                     <h1 style={{
-                        fontSize: '2rem',
-                        color: '#333',
+                        fontSize: '2.2rem',
+                        fontWeight: '800',
+                        background: 'linear-gradient(135deg, #4A90E2 0%, #357ABD 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
                         margin: 0,
-                        fontWeight: '600'
+                        letterSpacing: '-0.02em'
                     }}>
-                        🎲 번호 뽑기
+                        {APP_TITLES.NUMBER}
                     </h1>
-                    <p style={{ color: '#888', marginTop: '0.3rem', fontSize: '0.9rem' }}>
-                        랜덤으로 번호를 추첨합니다
+                    <p style={{ color: '#667', marginTop: '0.6rem', fontSize: '1rem', fontWeight: '500' }}>
+                        정정당당! 랜덤으로 번호를 추첨합니다
                     </p>
                 </div>
 
-                {/* 설정 영역 */}
+                {/* 설정 필드 카드 */}
                 <div style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    gap: '1rem',
-                    marginBottom: '2rem',
-                    flexWrap: 'wrap',
+                    background: '#ffffff',
                     padding: '1.2rem 1.5rem',
-                    background: 'rgba(0,0,0,0.02)',
-                    borderRadius: '12px',
-                    border: '1px solid rgba(0,0,0,0.06)'
+                    borderRadius: '24px',
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.04)',
+                    border: '1px solid #e2e2ea',
+                    marginBottom: '1.5rem'
                 }}>
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        background: '#fff',
-                        padding: '0.5rem 1rem',
-                        borderRadius: '8px',
-                        border: '1px solid #eee'
-                    }}>
-                        <label style={{ color: '#555', fontWeight: '500', fontSize: '0.9rem' }}>전체 인원</label>
-                        <input
-                            type="number"
-                            value={totalStudents}
-                            onChange={(e) => setTotalStudents(parseInt(e.target.value) || 0)}
-                            style={{
-                                padding: '0.4rem',
-                                fontSize: '1rem',
-                                width: '60px',
-                                textAlign: 'center',
-                                border: '1px solid #ddd',
-                                borderRadius: '6px',
-                                outline: 'none'
-                            }}
-                            min="1"
-                            disabled={isAnimating}
-                        />
-                    </div>
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        background: '#fff',
-                        padding: '0.5rem 1rem',
-                        borderRadius: '8px',
-                        border: '1px solid #eee'
-                    }}>
-                        <label style={{ color: '#555', fontWeight: '500', fontSize: '0.9rem' }}>뽑을 수</label>
-                        <input
-                            type="number"
-                            value={pickCount}
-                            onChange={(e) => setPickCount(parseInt(e.target.value) || 0)}
-                            style={{
-                                padding: '0.4rem',
-                                fontSize: '1rem',
-                                width: '60px',
-                                textAlign: 'center',
-                                border: '1px solid #ddd',
-                                borderRadius: '6px',
-                                outline: 'none'
-                            }}
-                            min="1"
-                            disabled={isAnimating}
-                        />
-                    </div>
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        background: '#fff',
-                        padding: '0.5rem 1rem',
-                        borderRadius: '8px',
-                        border: '1px solid #eee'
-                    }}>
-                        <label style={{ color: '#555', fontWeight: '500', fontSize: '0.9rem' }}>제외 번호</label>
-                        <input
-                            type="text"
-                            value={excludeInput}
-                            onChange={(e) => setExcludeInput(e.target.value)}
-                            placeholder="예: 5, 12"
-                            style={{
-                                padding: '0.4rem',
-                                fontSize: '1rem',
-                                width: '120px',
-                                border: '1px solid #ddd',
-                                borderRadius: '6px',
-                                outline: 'none'
-                            }}
-                            disabled={isAnimating}
-                        />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                        {[
+                            { label: '전체 인원', unit: '명', value: totalStudents, type: 'number', onChange: (v: any) => setTotalStudents(parseInt(v) || 0), min: 1 },
+                            { label: '뽑을 인원', unit: '명', value: pickCount, type: 'number', onChange: (v: any) => setPickCount(parseInt(v) || 0), min: 1 },
+                            { label: '제외 번호', unit: '', value: excludeInput, type: 'text', onChange: (v: any) => setExcludeInput(v), placeholder: '예: 5, 12' }
+                        ].map((field, i) => (
+                            <div key={i} style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '0.2rem 0'
+                            }}>
+                                <label style={{
+                                    color: '#445',
+                                    fontWeight: '600',
+                                    fontSize: '1rem',
+                                    flex: '1'
+                                }}>
+                                    {field.label}
+                                </label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flex: '1.5', justifyContent: 'flex-end' }}>
+                                    <input
+                                        type={field.type}
+                                        value={field.value}
+                                        onChange={(e) => field.onChange(e.target.value)}
+                                        placeholder={field.placeholder}
+                                        min={field.min}
+                                        disabled={isAnimating}
+                                        style={{
+                                            padding: '0.5rem 0.8rem',
+                                            fontSize: '1rem',
+                                            width: field.type === 'number' ? '80px' : '100%',
+                                            textAlign: field.type === 'number' ? 'center' : 'left',
+                                            border: '1px solid #e2e2ea',
+                                            borderRadius: '12px',
+                                            outline: 'none',
+                                            transition: 'all 0.2s ease',
+                                            background: '#fcfcfe',
+                                            fontWeight: '600',
+                                            color: '#334'
+                                        }}
+                                        onFocus={(e) => {
+                                            e.target.style.borderColor = '#4A90E2';
+                                            e.target.style.background = '#fff';
+                                        }}
+                                        onBlur={(e) => {
+                                            e.target.style.borderColor = '#f0f0f5';
+                                            e.target.style.background = '#fcfcfe';
+                                        }}
+                                    />
+                                    {field.unit && <span style={{ color: '#889', fontWeight: '500', width: '20px' }}>{field.unit}</span>}
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
                 {/* 결과 영역 */}
                 <div style={{
+                    minHeight: '220px',
+                    marginBottom: '2.5rem',
+                    padding: '2.5rem',
+                    background: '#ffffff',
+                    borderRadius: '24px',
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.04)',
+                    border: '1px solid #e2e2ea',
                     display: 'flex',
+                    flexDirection: 'column',
                     justifyContent: 'center',
-                    flexWrap: 'wrap',
-                    minHeight: '180px',
-                    marginBottom: '1.5rem',
-                    padding: '2rem',
-                    background: '#fafafa',
-                    borderRadius: '16px',
-                    border: '1px solid #eee',
-                    alignItems: 'center'
+                    alignItems: 'center',
+                    position: 'relative',
+                    overflow: 'hidden'
                 }}>
-                    {results.length > 0 ? (
-                        results.map((num, idx) => (
-                            <NumberSlot
-                                key={`${isAnimating ? 'anim' : 'static'}-${idx}`}
-                                targetNumber={num}
-                                isAnimating={isAnimating}
-                                index={idx}
-                                onAnimationComplete={handleAnimationComplete}
-                            />
-                        ))
-                    ) : (
-                        <div style={{ fontSize: '1.2rem', color: '#aaa' }}>
-                            시작 버튼을 눌러주세요
-                        </div>
-                    )}
+                    {/* 장식용 배경 로고 */}
+                    <div style={{
+                        position: 'absolute',
+                        opacity: 0.03,
+                        fontSize: '10rem',
+                        fontWeight: '900',
+                        color: '#4A90E2',
+                        pointerEvents: 'none',
+                        zIndex: 0
+                    }}>
+                        ?
+                    </div>
+
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        flexWrap: 'wrap',
+                        gap: '1rem',
+                        width: '100%',
+                        zIndex: 1
+                    }}>
+                        {results.length > 0 ? (
+                            results.map((num, idx) => (
+                                <NumberSlot
+                                    key={`${isAnimating ? 'anim' : 'static'}-${idx}`}
+                                    targetNumber={num}
+                                    isAnimating={isAnimating}
+                                    index={idx}
+                                    onAnimationComplete={handleAnimationComplete}
+                                />
+                            ))
+                        ) : (
+                            <div style={{
+                                textAlign: 'center',
+                                color: '#bbc',
+                                fontWeight: '500'
+                            }}>
+                                <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎯</div>
+                                <div style={{ fontSize: '1.1rem' }}>아래 버튼을 눌러 추첨을 시작하세요</div>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {/* 시작 버튼 */}
+                {/* 제어 버튼 */}
                 <div style={{ textAlign: 'center' }}>
                     <button
                         onClick={handleStart}
                         disabled={isAnimating}
                         style={{
-                            fontSize: '1.2rem',
-                            padding: '0.8rem 2.5rem',
-                            background: isAnimating ? '#ccc' : '#4A90E2',
+                            fontSize: '1.15rem',
+                            padding: '1rem 4rem',
+                            background: isAnimating
+                                ? '#e0e0e0'
+                                : 'linear-gradient(135deg, #4A90E2 0%, #357ABD 100%)',
                             color: '#fff',
                             border: 'none',
-                            borderRadius: '10px',
+                            borderRadius: '16px',
                             cursor: isAnimating ? 'not-allowed' : 'pointer',
-                            fontWeight: '600',
-                            transition: 'all 0.2s ease',
-                            boxShadow: isAnimating ? 'none' : '0 2px 8px rgba(74,144,226,0.3)'
+                            fontWeight: '700',
+                            transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            boxShadow: isAnimating ? 'none' : '0 8px 25px rgba(74,144,226,0.25)',
+                            transform: isAnimating ? 'scale(0.98)' : 'scale(1)'
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!isAnimating) {
+                                e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                                e.currentTarget.style.boxShadow = '0 12px 30px rgba(74,144,226,0.35)';
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!isAnimating) {
+                                e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                                e.currentTarget.style.boxShadow = '0 8px 25px rgba(74,144,226,0.25)';
+                            }
                         }}
                     >
-                        {isAnimating ? '⏳ 추첨 중...' : '🎯 뽑기 시작'}
+                        {isAnimating ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span className="spinner">⏳</span> 추첨 중...
+                            </div>
+                        ) : '추첨 시작하기'}
                     </button>
                 </div>
 
-                {/* 안내 */}
+                {/* 팁 안내 */}
                 <div style={{
-                    marginTop: '2rem',
+                    marginTop: '2.5rem',
                     textAlign: 'center',
-                    color: '#999',
-                    fontSize: '0.85rem'
+                    color: '#99a',
+                    fontSize: '0.9rem',
+                    fontWeight: '500'
                 }}>
-                    💡 설정은 자동으로 저장됩니다
+                    <span style={{ color: '#4A90E2', marginRight: '4px' }}>•</span>
+                    설정값은 브라우저에 자동으로 안전하게 보관됩니다
                 </div>
 
-                {/* 묘록 광고 배너 */}
-                <div style={{ marginTop: '2.5rem', marginBottom: '2rem' }}>
+                {/* 하단 배너 */}
+                <div style={{ marginTop: '3.5rem', marginBottom: '2.5rem' }}>
                     <MyorokBanner />
                 </div>
             </div>
