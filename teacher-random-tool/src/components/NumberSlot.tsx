@@ -25,7 +25,7 @@ const NumberSlot: React.FC<NumberSlotProps> = ({ targetNumber, isAnimating, onAn
                     setCurrentNumber(targetNumber);
                     onAnimationComplete?.();
                 }
-            }, 1000 + index * 500); // 1s base + delay per slot
+            }, 1500); // Constant 2s reveal time for all slots
 
             return () => {
                 clearInterval(interval);
@@ -47,16 +47,23 @@ const NumberSlot: React.FC<NumberSlotProps> = ({ targetNumber, isAnimating, onAn
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '120px',
-                height: '160px',
-                margin: '10px',
-                backgroundColor: '#fff',
-                borderRadius: '16px',
-                boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                fontSize: '4rem',
-                fontWeight: 'bold',
-                color: 'var(--primary-color)',
-                border: '2px solid #eee'
+                width: '110px',
+                height: '140px',
+                backgroundColor: '#ffffff',
+                borderRadius: '20px',
+                boxShadow: isAnimating
+                    ? '0 10px 25px rgba(74,144,226,0.15)'
+                    : '0 8px 15px rgba(0,0,0,0.06)',
+                fontSize: '4.2rem',
+                fontWeight: '800',
+                color: isAnimating ? '#4A90E2' : '#333',
+                border: isAnimating ? '3px solid #4A90E2' : '2px solid #f0f0f5',
+                transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                transform: isAnimating ? 'scale(1.05) translateY(-5px)' : 'scale(1)',
+                fontVariantNumeric: 'tabular-nums',
+                background: isAnimating
+                    ? 'linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%)'
+                    : '#ffffff'
             }}
         >
             {currentNumber}
