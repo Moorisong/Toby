@@ -183,7 +183,11 @@ const SeatRandom: React.FC = () => {
     const shuffleSeats = () => {
         const studentList = mode === 'name' ? [...names] : Array.from({ length: totalStudents }, (_, i) => String(i + 1));
 
-        if (studentCount === 0) return;
+        if (studentCount === 0) {
+            if (mode === 'name') alert('등록된 학생 이름이 없습니다. 이름을 먼저 입력해주세요!');
+            else alert('학생 인원 설정이 잘못되었습니다.');
+            return;
+        }
         const count = studentCount;
 
         // 고정석에 배치된 학생 인덱스들 (0-based)
@@ -277,40 +281,60 @@ const SeatRandom: React.FC = () => {
             <Header />
             <div className="container" style={{ maxWidth: '1000px', paddingTop: '1.5rem' }}>
                 {/* 타이틀 */}
-                <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                    <h1 style={{ fontSize: '2rem', color: '#333', margin: 0, fontWeight: '600' }}>
+                <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+                    <h1 style={{
+                        fontSize: '2.5rem',
+                        fontWeight: '800',
+                        background: 'linear-gradient(135deg, #4A90E2 0%, #357ABD 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        margin: 0,
+                        letterSpacing: '-0.02em'
+                    }}>
                         {APP_TITLES.SEAT}
                     </h1>
-                    <p style={{ color: '#888', marginTop: '0.3rem', fontSize: '0.9rem' }}>
+                    <p style={{ color: '#667', marginTop: '0.6rem', fontSize: '1rem', fontWeight: '500' }}>
                         학생들의 자리를 랜덤으로 배치합니다
                     </p>
                 </div>
 
                 {/* 설정 영역 */}
-                <div style={{
+                <div className="seat-config-panel" style={{
                     display: 'flex',
                     justifyContent: 'center',
+                    alignItems: 'stretch',
                     gap: '1rem',
-                    marginBottom: '1rem',
-                    flexWrap: 'wrap',
-                    padding: '1rem 1.5rem',
-                    background: 'rgba(0,0,0,0.02)',
-                    borderRadius: '12px',
-                    border: '1px solid rgba(0,0,0,0.06)'
+                    marginBottom: '1.5rem',
+                    padding: '1.2rem',
+                    background: '#ffffff',
+                    borderRadius: '24px',
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.04)',
+                    border: '1px solid #e2e2ea',
+                    flexWrap: 'wrap'
                 }}>
                     {/* 모드 토글 */}
-                    <div style={{ display: 'flex', gap: '0.3rem' }}>
+                    <div className="seat-config-item" style={{
+                        display: 'flex',
+                        gap: '0.4rem',
+                        background: '#f8f9fa',
+                        padding: '0.4rem',
+                        borderRadius: '16px',
+                        border: '1px solid #eee'
+                    }}>
                         <button
                             onClick={() => handleModeChange('number')}
                             style={{
-                                padding: '0.5rem 1rem',
+                                padding: '0 1.2rem',
                                 fontSize: '0.9rem',
-                                fontWeight: '600',
-                                background: mode === 'number' ? '#4A90E2' : '#f0f0f0',
-                                color: mode === 'number' ? '#fff' : '#666',
-                                border: mode === 'number' ? 'none' : '1px solid #ddd',
-                                borderRadius: '8px 0 0 8px',
-                                cursor: 'pointer'
+                                fontWeight: '700',
+                                background: mode === 'number' ? '#ffffff' : 'transparent',
+                                color: mode === 'number' ? '#4A90E2' : '#889',
+                                border: 'none',
+                                borderRadius: '12px',
+                                boxShadow: mode === 'number' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                minHeight: '44px'
                             }}
                         >
                             번호
@@ -318,14 +342,17 @@ const SeatRandom: React.FC = () => {
                         <button
                             onClick={() => handleModeChange('name')}
                             style={{
-                                padding: '0.5rem 1rem',
+                                padding: '0 1.2rem',
                                 fontSize: '0.9rem',
-                                fontWeight: '600',
-                                background: mode === 'name' ? '#E24A90' : '#f0f0f0',
-                                color: mode === 'name' ? '#fff' : '#666',
-                                border: mode === 'name' ? 'none' : '1px solid #ddd',
-                                borderRadius: '0 8px 8px 0',
-                                cursor: 'pointer'
+                                fontWeight: '700',
+                                background: mode === 'name' ? '#ffffff' : 'transparent',
+                                color: mode === 'name' ? '#E24A90' : '#889',
+                                border: 'none',
+                                borderRadius: '12px',
+                                boxShadow: mode === 'name' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                minHeight: '44px'
                             }}
                         >
                             이름
@@ -333,58 +360,117 @@ const SeatRandom: React.FC = () => {
                     </div>
 
                     {/* 배치 (열×줄) */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#fff', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #eee' }}>
-                        <label style={{ color: '#555', fontWeight: '500', fontSize: '0.9rem' }}>배치</label>
-                        <input
-                            type="text"
-                            inputMode="numeric"
-                            value={pairsPerRowInput}
-                            onChange={(e) => handlePairsPerRowChange(e.target.value.replace(/[^0-9]/g, ''))}
-                            onBlur={handlePairsPerRowBlur}
-                            style={{ padding: '0.4rem', fontSize: '1rem', width: '38px', textAlign: 'center', border: '1px solid #ddd', borderRadius: '6px' }}
-                        />
-                        <span style={{ color: '#aaa', fontWeight: '500', fontSize: '1rem' }}>×</span>
-                        <input
-                            type="text"
-                            inputMode="numeric"
-                            value={pairRowsInput}
-                            onChange={(e) => handlePairRowsChange(e.target.value.replace(/[^0-9]/g, ''))}
-                            onBlur={handlePairRowsBlur}
-                            style={{ padding: '0.4rem', fontSize: '1rem', width: '38px', textAlign: 'center', border: '1px solid #ddd', borderRadius: '6px' }}
-                        />
-                        <span style={{ color: '#aaa', fontSize: '0.75rem' }}>(열×줄)</span>
+                    <div className="seat-config-item" style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.8rem',
+                        padding: '0 1.2rem',
+                        borderRadius: '16px',
+                        border: '1px solid #e2e2ea',
+                        background: '#fcfcfe'
+                    }}>
+                        <label style={{ color: '#445', fontWeight: '600', fontSize: '0.95rem' }}>배치</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                value={pairsPerRowInput}
+                                onChange={(e) => handlePairsPerRowChange(e.target.value.replace(/[^0-9]/g, ''))}
+                                onBlur={handlePairsPerRowBlur}
+                                style={{
+                                    padding: '0.4rem',
+                                    fontSize: '1rem',
+                                    width: '40px',
+                                    textAlign: 'center',
+                                    border: '1px solid #e2e2ea',
+                                    borderRadius: '10px',
+                                    fontWeight: '700',
+                                    color: '#334',
+                                    background: '#fff',
+                                    outline: 'none'
+                                }}
+                            />
+                            <span style={{ color: '#aaa', fontWeight: '600', fontSize: '1rem' }}>×</span>
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                value={pairRowsInput}
+                                onChange={(e) => handlePairRowsChange(e.target.value.replace(/[^0-9]/g, ''))}
+                                onBlur={handlePairRowsBlur}
+                                style={{
+                                    padding: '0.4rem',
+                                    fontSize: '1rem',
+                                    width: '40px',
+                                    textAlign: 'center',
+                                    border: '1px solid #e2e2ea',
+                                    borderRadius: '10px',
+                                    fontWeight: '700',
+                                    color: '#334',
+                                    background: '#fff',
+                                    outline: 'none'
+                                }}
+                            />
+                        </div>
+                        <span style={{ color: '#889', fontSize: '0.85rem', fontWeight: '500' }}>(열×줄)</span>
                     </div>
 
                     {/* 번호 모드: 학생 수 */}
                     {mode === 'number' && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #eee' }}>
-                            <label style={{ color: '#555', fontWeight: '500', fontSize: '0.9rem' }}>학생 수</label>
+                        <div className="seat-config-item" style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.8rem',
+                            padding: '0 1.2rem',
+                            borderRadius: '16px',
+                            border: '1px solid #e2e2ea',
+                            background: '#fcfcfe'
+                        }}>
+                            <label style={{ color: '#445', fontWeight: '600', fontSize: '0.95rem' }}>학생 수</label>
                             <input
                                 type="text"
                                 inputMode="numeric"
                                 value={totalStudentsInput}
                                 onChange={(e) => handleTotalStudentsChange(e.target.value.replace(/[^0-9]/g, ''))}
                                 onBlur={handleTotalStudentsBlur}
-                                style={{ padding: '0.4rem', fontSize: '1rem', width: '55px', textAlign: 'center', border: '1px solid #ddd', borderRadius: '6px' }}
+                                style={{
+                                    padding: '0.4rem',
+                                    fontSize: '1rem',
+                                    width: '55px',
+                                    textAlign: 'center',
+                                    border: '1px solid #e2e2ea',
+                                    borderRadius: '10px',
+                                    fontWeight: '700',
+                                    color: '#334',
+                                    background: '#fff',
+                                    outline: 'none'
+                                }}
                             />
                         </div>
                     )}
 
                     {/* 이름 모드: 이름 설정 버튼 */}
                     {mode === 'name' && (
-                        <div style={{ position: 'relative' }}>
+                        <div className="seat-config-item" style={{ display: 'flex' }}>
                             <button
                                 onClick={() => setShowNameInput(true)}
                                 className={names.length === 0 ? 'btn-name-nudge' : ''}
                                 style={{
-                                    padding: '0.5rem 1rem',
-                                    fontSize: '0.9rem',
-                                    fontWeight: '500',
-                                    background: names.length === 0 ? '#fff0f6' : '#fff',
+                                    padding: '0 1.2rem',
+                                    fontSize: '0.95rem',
+                                    fontWeight: '700',
+                                    background: '#ffffff',
                                     color: '#E24A90',
-                                    border: names.length === 0 ? '2px solid #E24A90' : '1px solid #E24A90',
-                                    borderRadius: '8px',
-                                    cursor: 'pointer'
+                                    border: '1px solid #E24A90',
+                                    borderRadius: '16px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    minHeight: '44px'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = '#fff0f6';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = '#ffffff';
                                 }}
                             >
                                 📝 이름 ({names.length}명)
@@ -462,21 +548,37 @@ const SeatRandom: React.FC = () => {
                 )}
 
                 {/* 버튼 영역 */}
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.8rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
                     <button
                         onClick={() => { shuffleSeats(); setShowShuffleHint(false); }}
                         disabled={mode === 'name' && names.length === 0}
                         className={showShuffleHint ? 'btn-pulse-hint' : ''}
                         style={{
-                            padding: '0.7rem 1.8rem',
-                            fontSize: '1.1rem',
-                            fontWeight: '600',
-                            background: (mode === 'name' && names.length === 0) ? '#ccc' : '#4A90E2',
-                            color: '#fff',
+                            background: (mode === 'name' && names.length === 0)
+                                ? '#e0e0e0'
+                                : 'linear-gradient(135deg, #4A90E2 0%, #357ABD 100%)',
                             border: 'none',
-                            borderRadius: '10px',
+                            color: '#fff',
+                            padding: '0 2.5rem',
+                            fontSize: '1.1rem',
+                            fontWeight: '800',
+                            borderRadius: '16px',
+                            boxShadow: (mode === 'name' && names.length === 0) ? 'none' : '0 8px 20px rgba(74,144,226,0.3)',
                             cursor: (mode === 'name' && names.length === 0) ? 'not-allowed' : 'pointer',
-                            boxShadow: showShuffleHint ? undefined : '0 2px 8px rgba(74,144,226,0.3)'
+                            transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            minHeight: '52px'
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!(mode === 'name' && names.length === 0)) {
+                                e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                                e.currentTarget.style.boxShadow = '0 12px 25px rgba(74,144,226,0.4)';
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!(mode === 'name' && names.length === 0)) {
+                                e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                                e.currentTarget.style.boxShadow = '0 8px 20px rgba(74,144,226,0.3)';
+                            }
                         }}
                     >
                         짝궁 섞기
@@ -485,14 +587,25 @@ const SeatRandom: React.FC = () => {
                         <button
                             onClick={handleExport}
                             style={{
-                                padding: '0.7rem 1.5rem',
-                                fontSize: '1rem',
-                                fontWeight: '600',
-                                background: '#50C878',
-                                color: '#fff',
+                                background: 'linear-gradient(135deg, #50C878 0%, #3DA65E 100%)',
                                 border: 'none',
-                                borderRadius: '10px',
-                                cursor: 'pointer'
+                                color: '#fff',
+                                padding: '0 2rem',
+                                fontSize: '1rem',
+                                fontWeight: '800',
+                                borderRadius: '16px',
+                                boxShadow: '0 8px 20px rgba(80,200,120,0.2)',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease',
+                                minHeight: '52px'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 12px 25px rgba(80,200,120,0.3)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 8px 20px rgba(80,200,120,0.2)';
                             }}
                         >
                             이미지로 저장
@@ -632,10 +745,62 @@ const SeatRandom: React.FC = () => {
                     <a href="/seat/settings" style={{ color: '#aaa', textDecoration: 'none' }}>Setting</a>
                 </div>
 
-                <div style={{ marginTop: '2.5rem', marginBottom: '2rem' }}>
+                <div style={{ marginTop: '3rem', marginBottom: '3rem' }}>
                     <MyorokBanner />
                 </div>
             </div>
+            {/* 모바일 최적화 스타일 */}
+            <style>{`
+                @media (max-width: 600px) {
+                    .seat-config-panel {
+                        padding: 1.2rem 1rem !important;
+                        gap: 1rem !important;
+                        flex-direction: column !important;
+                        align-items: center !important;
+                        border-radius: 20px !important;
+                        margin: 0 auto 1.5rem auto !important;
+                        width: calc(100% - 2rem) !important;
+                        box-sizing: border-box !important;
+                    }
+                    .seat-config-item {
+                        width: 100% !important;
+                        display: flex !important;
+                        justify-content: center !important;
+                        align-items: center !important;
+                        min-height: 48px !important;
+                        box-sizing: border-box !important;
+                    }
+                    /* 개별 설정 항목들이 너비를 너무 차지하지 않으면서 가운데 정렬되도록 */
+                    .seat-config-item > button, 
+                    .seat-config-item > div {
+                        width: 100% !important;
+                        max-width: 330px !important; /* 조금 더 넓게 */
+                        display: flex !important;
+                        justify-content: center !important;
+                        align-items: center !important;
+                        white-space: nowrap !important; /* 글자 줄바꿈 방지 */
+                    }
+                    /* 라벨들 줄바꿈 절대 방지 */
+                    .seat-config-item label,
+                    .seat-config-item span {
+                        white-space: nowrap !important;
+                        flex-shrink: 0 !important;
+                    }
+                    /* 배치(열x줄) 영역 내부 텍스트 겹침 방지 */
+                    .seat-config-item > div {
+                        gap: 0.6rem !important;
+                        padding: 0 1rem !important;
+                    }
+                    /* 이름 버튼 가이드(말풍선) 위치 미세 조정 */
+                    .btn-name-nudge::after {
+                        width: 90% !important;
+                        left: 50% !important;
+                        transform: translateX(-50%) !important;
+                        white-space: normal !important; /* 말풍선은 줄바꿈 허용 */
+                        text-align: center !important;
+                    }
+                }
+            `}</style>
         </div>
     );
 };
