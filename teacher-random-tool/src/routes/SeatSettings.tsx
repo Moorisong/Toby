@@ -172,10 +172,10 @@ const SeatSettings: React.FC = () => {
                 {/* 타이틀 */}
                 <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
                     <h1 style={{ fontSize: '2rem', color: '#333', margin: 0, fontWeight: '600' }}>
-                        ⚙️ 짝꿍 배치 설정
+                        설정 페이지(빈 자리, 고정석)
                     </h1>
                     <p style={{ color: '#888', marginTop: '0.3rem', fontSize: '0.9rem' }}>
-                        고정석을 설정하세요 (브라우저 탭을 닫으면 초기화)
+                        아래 좌석을 직접 클릭하여 설정하세요 (브라우저 탭을 닫으면 초기화)
                     </p>
                 </div>
 
@@ -588,12 +588,12 @@ const SeatSettings: React.FC = () => {
                             fontSize: '1.1rem'
                         }}
                     >
-                        🪑 짝꿍 배치로 이동
+                        저장 및 돌아가기
                     </a>
                 </div>
 
                 <div style={{ marginTop: '1.5rem', textAlign: 'center', color: '#999', fontSize: '0.85rem' }}>
-                    ⚠️ 고정석은 브라우저 탭을 닫으면 초기화됩니다
+                    ⚠️ 브라우저 탭을 닫으면 보든 설정 값이 초기화됩니다
                 </div>
             </div>
         </div>
