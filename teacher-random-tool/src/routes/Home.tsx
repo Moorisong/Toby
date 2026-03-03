@@ -70,6 +70,7 @@ const Home: React.FC = () => {
             {/* 도구 카드들 */}
             <div style={{
                 display: 'grid',
+                marginTop: '4em',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
                 gap: '1.5rem',
                 width: '100%',
@@ -148,13 +149,14 @@ const Home: React.FC = () => {
             </div>
 
             {/* 묘록 배너 */}
-            <div style={{ marginTop: '10rem', width: '100%' }}>
+            <div style={{ marginTop: '7rem', width: '100%' }}>
                 <MyorokBanner />
             </div>
 
             {/* 하단 푸터 */}
             <div style={{
-                marginTop: '2rem',
+                marginTop: '3rem',
+                marginBottom: '3rem',
                 color: '#aaa',
                 fontSize: '0.85rem'
             }}>
