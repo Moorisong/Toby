@@ -57,7 +57,7 @@ const NumberSlot: React.FC<NumberSlotProps> = ({ targetNumber, isAnimating, onAn
                 fontSize: '4.2rem',
                 fontWeight: '800',
                 color: isAnimating ? '#4A90E2' : '#333',
-                border: isAnimating ? '3px solid #4A90E2' : '2px solid #f0f0f5',
+                border: isAnimating ? '2px solid #4A90E2' : '1px solid #e2e2ea',
                 transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                 transform: isAnimating ? 'scale(1.05) translateY(-5px)' : 'scale(1)',
                 fontVariantNumeric: 'tabular-nums',
