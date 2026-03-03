@@ -19,6 +19,12 @@ const BallPicker: React.FC = () => {
     const frameCountRef = useRef<number>(0);
     const simulationSpeedRef = useRef<number>(1);
     const accumulatorRef = useRef<number>(0);
+    const [isPaused, setIsPaused] = useState<boolean>(false);
+    const isPausedRef = useRef<boolean>(false);
+
+    useEffect(() => {
+        isPausedRef.current = isPaused;
+    }, [isPaused]);
 
     useEffect(() => {
         simulationSpeedRef.current = simulationSpeed;
@@ -45,6 +51,7 @@ const BallPicker: React.FC = () => {
         }
 
         setIsPlaying(true);
+        setIsPaused(false);
         setWinner(null);
         frameCountRef.current = 0;
         accumulatorRef.current = 0;
@@ -98,27 +105,32 @@ const BallPicker: React.FC = () => {
 
         const engine = engineRef.current;
 
-        frameCountRef.current++;
+        if (!isPausedRef.current) {
+            frameCountRef.current++;
 
-        // 1.0 속도를 기존보다 더 느리게(0.6배속) 설정
-        const baseSpeedMultiplier = 0.6;
-        accumulatorRef.current += simulationSpeedRef.current * baseSpeedMultiplier;
+            // 1.0 속도를 기존보다 더 느리게(0.6배속) 설정
+            const baseSpeedMultiplier = 0.6;
+            accumulatorRef.current += simulationSpeedRef.current * baseSpeedMultiplier;
 
-        let updatesThisFrame = 0;
-        while (accumulatorRef.current >= 1 && updatesThisFrame < 3) {
-            engine.update();
-            accumulatorRef.current -= 1;
-            updatesThisFrame++;
+            let updatesThisFrame = 0;
+            while (accumulatorRef.current >= 1 && updatesThisFrame < 3) {
+                engine.update();
+                accumulatorRef.current -= 1;
+                updatesThisFrame++;
+            }
         }
 
         engine.draw(ctx);
 
-        const goalBall = engine.getGoalBall();
-        if (goalBall) {
-            setWinner(goalBall.number);
-            setIsPlaying(false);
-            cancelAnimationFrame(requestRef.current);
-            return;
+        if (!isPausedRef.current) {
+            const goalBall = engine.getGoalBall();
+            if (goalBall) {
+                setWinner(goalBall.number);
+                setIsPlaying(false);
+                setIsPaused(false);
+                cancelAnimationFrame(requestRef.current);
+                return;
+            }
         }
 
         requestRef.current = requestAnimationFrame(animate);
@@ -133,21 +145,25 @@ const BallPicker: React.FC = () => {
     return (
         <div style={{
             minHeight: '100vh',
-            background: '#ffffff'
+            background: 'linear-gradient(180deg, #f8faff 0%, #f0f4f8 100%)',
+            fontFamily: "'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif"
         }}>
             <Header />
-            <div className="container" style={{ maxWidth: '1000px', paddingTop: '1rem' }}>
+            <div className="container" style={{ maxWidth: '900px', padding: '2rem 1.5rem' }}>
                 {/* 타이틀 영역 */}
-                <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
                     <h1 style={{
                         fontSize: '2.5rem',
-                        fontWeight: 'bold',
-                        color: '#1a1a1a',
-                        margin: 0
+                        fontWeight: '800',
+                        background: 'linear-gradient(135deg, #4A90E2 0%, #357ABD 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        margin: 0,
+                        letterSpacing: '-0.02em'
                     }}>
                         {APP_TITLES.BALL}
                     </h1>
-                    <p style={{ color: '#666', marginTop: '0.5rem' }}>
+                    <p style={{ color: '#667', marginTop: '0.6rem', fontSize: '1rem', fontWeight: '500' }}>
                         {gameMode === 1 ? '고정된 코스에서 레이싱으로 1등 뽑기' : '매번 새로운 랜덤 코스! 1등은 누구?'}
                     </p>
                 </div>
@@ -156,32 +172,41 @@ const BallPicker: React.FC = () => {
                 <div style={{
                     display: 'flex',
                     justifyContent: 'center',
-                    alignItems: 'center',
-                    gap: '1.5rem',
+                    alignItems: 'stretch', // 세로 높이 통일을 위해 stretch
+                    gap: '1rem',
                     marginBottom: '1.5rem',
-                    padding: '1.2rem 2rem',
-                    background: 'rgba(0,0,0,0.03)',
-                    borderRadius: '16px',
-                    border: '1px solid rgba(0,0,0,0.1)',
-                    backdropFilter: 'blur(10px)',
+                    padding: '1.2rem',
+                    background: '#ffffff',
+                    borderRadius: '24px',
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.04)',
+                    border: '1px solid #e2e2ea',
                     flexWrap: 'wrap'
                 }}>
-                    {/* 모드 선택 */}
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    {/* 모드 선택 섹션 */}
+                    <div style={{
+                        display: 'flex',
+                        gap: '0.4rem',
+                        background: '#f8f9fa',
+                        padding: '0.4rem',
+                        borderRadius: '16px',
+                        border: '1px solid #eee'
+                    }}>
                         <button
                             onClick={() => handleModeChange(1)}
                             disabled={isPlaying}
                             style={{
-                                background: gameMode === 1 ? '#4A90E2' : '#f0f0f0',
-                                color: gameMode === 1 ? '#fff' : '#666',
-                                padding: '0.6rem 1.2rem',
-                                fontSize: '0.95rem',
-                                fontWeight: '600',
-                                border: gameMode === 1 ? 'none' : '1px solid #ddd',
-                                borderRadius: '8px',
+                                background: gameMode === 1 ? '#ffffff' : 'transparent',
+                                color: gameMode === 1 ? '#4A90E2' : '#889',
+                                padding: '0 1.2rem',
+                                fontSize: '0.9rem',
+                                fontWeight: '700',
+                                border: 'none',
+                                borderRadius: '12px',
+                                boxShadow: gameMode === 1 ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
                                 cursor: isPlaying ? 'not-allowed' : 'pointer',
-                                opacity: isPlaying ? 0.5 : 1,
-                                transition: 'all 0.2s ease'
+                                opacity: isPlaying && gameMode !== 1 ? 0.5 : 1,
+                                transition: 'all 0.2s ease',
+                                minHeight: '44px'
                             }}
                         >
                             고정 맵
@@ -190,64 +215,67 @@ const BallPicker: React.FC = () => {
                             onClick={() => handleModeChange(2)}
                             disabled={isPlaying}
                             style={{
-                                background: gameMode === 2 ? '#E24A90' : '#f0f0f0',
-                                color: gameMode === 2 ? '#fff' : '#666',
-                                padding: '0.6rem 1.2rem',
-                                fontSize: '0.95rem',
-                                fontWeight: '600',
-                                border: gameMode === 2 ? 'none' : '1px solid #ddd',
-                                borderRadius: '8px',
+                                background: gameMode === 2 ? '#ffffff' : 'transparent',
+                                color: gameMode === 2 ? '#E24A90' : '#889',
+                                padding: '0 1.2rem',
+                                fontSize: '0.9rem',
+                                fontWeight: '700',
+                                border: 'none',
+                                borderRadius: '12px',
+                                boxShadow: gameMode === 2 ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
                                 cursor: isPlaying ? 'not-allowed' : 'pointer',
-                                opacity: isPlaying ? 0.5 : 1,
-                                transition: 'all 0.2s ease'
+                                opacity: isPlaying && gameMode !== 2 ? 0.5 : 1,
+                                transition: 'all 0.2s ease',
+                                minHeight: '44px'
                             }}
                         >
                             랜덤 맵
                         </button>
                     </div>
 
+                    {/* 공 개수 설정 */}
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.5rem',
-                        background: 'rgba(240,240,245,0.9)',
-                        padding: '0.5rem 1rem',
-                        borderRadius: '10px',
-                        border: '1px solid rgba(0,0,0,0.1)'
+                        gap: '0.8rem',
+                        padding: '0 1.2rem',
+                        borderRadius: '16px',
+                        border: '1px solid #e2e2ea',
+                        background: '#fcfcfe'
                     }}>
-                        <span style={{ color: '#333', fontWeight: '500' }}>공 개수</span>
+                        <span style={{ color: '#445', fontWeight: '600', fontSize: '0.95rem' }}>공 개수</span>
                         <input
                             type="number"
                             value={totalBalls}
                             onChange={(e) => setTotalBalls(parseInt(e.target.value) || 0)}
                             style={{
-                                width: '55px',
-                                padding: '0.4rem 0.5rem',
-                                fontSize: '1.1rem',
-                                fontWeight: 'bold',
+                                width: '70px',
+                                padding: '0.4rem',
+                                fontSize: '1rem',
+                                fontWeight: '700',
                                 textAlign: 'center',
-                                background: '#fff',
-                                border: '2px solid #ddd',
-                                borderRadius: '8px',
-                                color: '#333',
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#334',
                                 outline: 'none'
                             }}
                             min="1"
                             max="50"
                             disabled={isPlaying}
                         />
+                        <span style={{ color: '#889', fontWeight: '500', fontSize: '0.95rem' }}>개</span>
                     </div>
 
+                    {/* 속도 조절 */}
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.5rem',
-                        background: 'rgba(240,240,245,0.9)',
-                        padding: '0.5rem 1rem',
-                        borderRadius: '10px',
-                        border: '1px solid rgba(0,0,0,0.1)'
+                        gap: '0.6rem',
+                        padding: '0 0.5rem',
+                        borderRadius: '16px',
+                        background: 'transparent',
                     }}>
-                        <span style={{ color: '#333', fontWeight: '500' }}>⚡ 속도</span>
+                        <span style={{ color: '#445', fontWeight: '600', fontSize: '0.95rem', whiteSpace: 'nowrap' }}>⚡ 속도</span>
                         <input
                             type="range"
                             min="0.5"
@@ -255,51 +283,70 @@ const BallPicker: React.FC = () => {
                             step="0.25"
                             value={simulationSpeed}
                             onChange={(e) => setSimulationSpeed(parseFloat(e.target.value))}
-                            style={{
-                                width: '80px',
-                                cursor: 'pointer'
-                            }}
+                            className="speed-range"
                         />
                         <span style={{
-                            color: '#333',
-                            fontWeight: 'bold',
-                            fontSize: '0.9rem',
-                            minWidth: '30px'
+                            color: '#4A90E2',
+                            fontWeight: '700',
+                            fontSize: '0.95rem',
+                            minWidth: '45px',
+                            textAlign: 'left'
                         }}>
                             {simulationSpeed.toFixed(2)}x
                         </span>
                     </div>
 
+                    {/* 시작 / 일시정지 버튼 */}
                     <button
-                        onClick={startSimulation}
-                        disabled={isPlaying}
+                        onClick={() => {
+                            if (!isPlaying) {
+                                startSimulation();
+                            } else {
+                                setIsPaused(!isPaused);
+                            }
+                        }}
                         style={{
-                            background: isPlaying ? '#888' : '#4A90E2',
+                            background: !isPlaying
+                                ? 'linear-gradient(135deg, #4A90E2 0%, #357ABD 100%)'
+                                : isPaused
+                                    ? 'linear-gradient(135deg, #FFB74D 0%, #F57C00 100%)' // 다시 시작 (주황색 계열)
+                                    : 'linear-gradient(135deg, #666 0%, #444 100%)',      // 일시정지 (회색/검정 계열)
                             border: 'none',
                             color: '#fff',
-                            padding: '0.8rem 2rem',
-                            fontSize: '1.3rem',
-                            fontWeight: 'bold',
-                            borderRadius: '12px',
-                            boxShadow: isPlaying ? 'none' : '0 4px 12px rgba(74,144,226,0.4)',
-                            cursor: isPlaying ? 'not-allowed' : 'pointer',
-                            transition: 'all 0.3s ease'
+                            padding: '0 2.5rem',
+                            fontSize: '1.1rem',
+                            fontWeight: '800',
+                            borderRadius: '16px',
+                            boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            minHeight: '52px'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                            e.currentTarget.style.boxShadow = '0 12px 25px rgba(0,0,0,0.2)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                            e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)';
                         }}
                     >
-                        {isPlaying ? '레이싱 중...' : 'START!'}
+                        {!isPlaying ? '시작하기' : isPaused ? '다시 시작' : '일시정지'}
                     </button>
                 </div>
 
                 {/* 팁 안내 */}
                 <div style={{
                     textAlign: 'center',
-                    color: '#888',
-                    fontSize: '0.85rem',
-                    marginBottom: '1rem'
+                    color: '#99a',
+                    fontSize: '0.9rem',
+                    fontWeight: '500',
+                    marginBottom: '1.5rem'
                 }}>
-                    💡 {gameMode === 1
-                        ? '고정 맵: 항상 같은 장애물 배치'
-                        : '랜덤 맵: 매번 새로운 장애물!'}
+                    <span style={{ color: gameMode === 1 ? '#4A90E2' : '#E24A90', marginRight: '6px' }}>•</span>
+                    {gameMode === 1
+                        ? '고정 맵: 항상 같은 장애물 배치로 공정한 레이스'
+                        : '랜덤 맵: 매번 공이 어디로 튈지 모르는 짜릿함!'}
                 </div>
 
                 {/* 캔버스 영역 */}
@@ -396,6 +443,48 @@ const BallPicker: React.FC = () => {
                 @keyframes popIn {
                     0% { transform: scale(0.8); opacity: 0; }
                     100% { transform: scale(1); opacity: 1; }
+                }
+
+                .speed-range {
+                    -webkit-appearance: none;
+                    width: 100px;
+                    height: 4px;
+                    background: #e2e2ea;
+                    border-radius: 2px;
+                    outline: none;
+                    margin: 0;
+                    cursor: pointer;
+                }
+
+                .speed-range::-webkit-slider-thumb {
+                    -webkit-appearance: none;
+                    width: 14px;
+                    height: 14px;
+                    background: #4A90E2;
+                    border-radius: 50%;
+                    cursor: pointer;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    border: none;
+                    margin-top: -5px; /* (height-thumb_height)/2 = (4-14)/2 */
+                }
+
+                .speed-range::-moz-range-thumb {
+                    width: 14px;
+                    height: 14px;
+                    background: #4A90E2;
+                    border-radius: 50%;
+                    cursor: pointer;
+                    border: none;
+                }
+
+                /* Active track progress (Chrome only trick) */
+                .speed-range::-webkit-slider-runnable-track {
+                    width: 100%;
+                    height: 4px;
+                    cursor: pointer;
+                    background: #e2e2ea;
+                    border-radius: 2px;
+                    border: none;
                 }
             `}</style>
         </div>
